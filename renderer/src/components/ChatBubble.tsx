@@ -18,19 +18,19 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
       <div
-        className={`max-w-xs px-4 py-2 rounded-2xl ${
+        className={`max-w-xs px-4 py-3 rounded-2xl glass-bubble shadow-lg ${
           isUser
-            ? 'bg-gray-300 text-gray-800 rounded-bl-sm'
-            : 'bg-gray-700 text-white rounded-br-sm'
+            ? 'bg-white/30 text-gray-900 rounded-bl-sm border border-white/40'
+            : 'bg-gray-900/40 text-white rounded-br-sm border border-white/20'
         }`}
         style={{
-          borderRadius: '16px',
+          borderRadius: '18px',
           ...(isUser
             ? { borderBottomLeftRadius: '4px' }
             : { borderBottomRightRadius: '4px' }),
         }}
       >
-        <p className="text-sm leading-relaxed break-words">{message.content}</p>
+        <p className="text-sm leading-relaxed break-words font-medium">{message.content}</p>
       </div>
     </motion.div>
   );
