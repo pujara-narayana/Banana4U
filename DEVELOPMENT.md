@@ -13,7 +13,7 @@
 npm install
 ```
 
-2. **Set up environment variables:**
+2. **Set up environment variables:** (Never commit your real keys. The key you pasted in chat is now exposed – rotate it immediately in the Google Gemini console.)
 ```bash
 cp .env.example .env
 ```
@@ -22,6 +22,13 @@ Then edit `.env` and add your Gemini API key:
 ```env
 GEMINI_API_KEY=your_actual_api_key_here
 ```
+Security Notes:
+- Treat API keys like passwords. If a key appears in screenshots, logs, or chat history, rotate it.
+- The build injects `process.env.GEMINI_API_KEY` at compile time for the renderer via webpack DefinePlugin.
+- For runtime user changes (e.g., settings UI), the explicit key provided there overrides the injected one.
+
+Streaming (optional / experimental):
+- A streaming endpoint constant `GEMINI_STREAM` is available. The `GeminiClient.streamResponse()` async generator yields partial text chunks if you integrate it in the UI.
 
 3. **Run in development mode:**
 ```bash
