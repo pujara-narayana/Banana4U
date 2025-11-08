@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff } from 'lucide-react';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mic, MicOff, MessageCircle } from "lucide-react";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onVoiceInput: () => void;
+  onConversationalMode: () => void;
   isListening: boolean;
+  isConversationalMode: boolean;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -13,18 +15,18 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onVoiceInput,
   isListening,
 }) => {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
       onSendMessage(inputValue.trim());
-      setInputValue('');
+      setInputValue("");
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto pointer-events-auto">
+    <div className="no-drag fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-50">
       <AnimatePresence>
         {isListening && (
           <motion.div
@@ -40,11 +42,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-      
-      <form
-        onSubmit={handleSubmit}
-        className="flex items-center gap-2"
-      >
+
+      <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <input
           type="text"
           value={inputValue}
@@ -58,12 +57,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onClick={onVoiceInput}
           className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg ${
             isListening
-              ? 'bg-red-500 hover:bg-red-600'
-              : 'bg-blue-500 hover:bg-blue-600'
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-blue-500 hover:bg-blue-600"
           }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
-          title={isListening ? 'Stop listening' : 'Voice input'}
+          title={isListening ? "Stop listening" : "Voice input"}
         >
           {isListening ? (
             <MicOff size={20} color="white" />

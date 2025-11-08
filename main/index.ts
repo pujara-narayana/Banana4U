@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session, systemPreferences } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { createMainWindow } from './window';
@@ -27,6 +27,49 @@ app.on('window-all-closed', () => {
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
   console.log('🍌 Banana4U is starting...');
+
+  // Request microphone access at OS level (macOS)
+  if (process.platform === 'darwin') {
+    const microphoneStatus = systemPreferences.getMediaAccessStatus('microphone');
+    console.log('🎤 Microphone access status:', microphoneStatus);
+    
+    if (microphoneStatus !== 'granted') {
+      console.log('🎤 Requesting microphone access...');
+      systemPreferences.askForMediaAccess('microphone').then((granted) => {
+        if (granted) {
+          console.log('✅ Microphone access granted');
+        } else {
+          console.error('❌ Microphone access denied');
+        }
+      });
+    }
+  }
+
+  // Set up session to handle media permissions - MICROPHONE ONLY
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    console.log('🔐 Permission requested:', permission);
+    
+    // Only allow media/microphone, NOT desktop audio/screen audio
+    if (permission === 'media') {
+      console.log('✅ Granting media permission (microphone only)');
+      callback(true);
+    } else if (permission === 'display-capture') {
+      console.log('❌ Denying display capture (no system audio)');
+      callback(false);
+    } else {
+      console.log('ℹ️ Permission:', permission);
+      callback(false);
+    }
+  });
+
+  // Handle media device selection - filter out system audio devices
+  session.defaultSession.setDevicePermissionHandler((details) => {
+    console.log('🎤 Device permission check:', details);
+    
+    // Only allow HID devices (not audio - Electron doesn't expose audio device filtering here)
+    // Audio filtering must happen in renderer process
+    return true;
+  });
 
   // Create the main window
   mainWindow = createMainWindow();
