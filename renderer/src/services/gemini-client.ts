@@ -167,6 +167,65 @@ class GeminiClient {
   }
 
   /**
+   * Check if a screenshot is needed for the given query
+   * Returns true if Gemini thinks a screenshot would be helpful
+   */
+  async checkIfScreenshotNeeded(userQuery: string): Promise<boolean> {
+    const checkPrompt = `You are an AI assistant that determines if a screenshot is needed to answer a user's question.
+    
+The user has asked: "${userQuery}"
+
+Analyze this query and respond with ONLY the word "screenshot" if the query:
+- Asks to explain something visible on screen (e.g., "explain this", "what is this", "what does this mean")
+- Asks about something that would benefit from visual context
+- Uses words like "this", "that", "here" without clear context
+- Asks to analyze, debug, or review code/content that's likely visible
+
+Otherwise, respond with "no" if the query:
+- Is a general question that doesn't need visual context
+- Asks about concepts, definitions, or explanations that don't require seeing the screen
+- Is self-contained and doesn't reference something visible
+
+Respond with ONLY one word: either "screenshot" or "no". Nothing else.`;
+
+    try {
+      const response = await axios.post<GeminiResponse>(
+        `${API_ENDPOINTS.GEMINI}?key=${this.apiKey}`,
+        {
+          contents: [
+            {
+              parts: [{ text: checkPrompt }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 10,
+            topP: 0.95,
+            topK: 40,
+          },
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+          timeout: 10000,
+        }
+      );
+
+      if (response.data.candidates && response.data.candidates.length > 0) {
+        const text = response.data.candidates[0].content.parts[0].text
+          .toLowerCase()
+          .trim();
+        console.log("🔍 Screenshot check result:", text);
+        return text.includes("screenshot");
+      }
+      return false;
+    } catch (error) {
+      console.error("Screenshot check failed:", error);
+      // Default to false if check fails
+      return false;
+    }
+  }
+
+  /**
    * Test the API connection
    */
   async testConnection(): Promise<boolean> {

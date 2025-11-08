@@ -7,6 +7,7 @@ interface UseBananaAIResult {
     message: string,
     screenContext?: ScreenContext
   ) => Promise<string>;
+  sendMessageWithAutoScreenshot: (message: string) => Promise<string>;
   isLoading: boolean;
   error: string | null;
   conversationHistory: ConversationMessage[];
@@ -100,12 +101,60 @@ export const useBananaAI = (): UseBananaAIResult => {
     [geminiClient, conversationHistory, personality]
   );
 
+  const sendMessageWithAutoScreenshot = useCallback(
+    async (message: string): Promise<string> => {
+      if (!geminiClient) {
+        const errorMsg = "Gemini client not initialized";
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        console.log("🔍 Checking if screenshot is needed for:", message);
+
+        // First, check if a screenshot is needed
+        const needsScreenshot = await geminiClient.checkIfScreenshotNeeded(message);
+
+        let screenContext: ScreenContext | undefined = undefined;
+
+        if (needsScreenshot) {
+          console.log("📸 Screenshot needed! Capturing screen...");
+          
+          // Capture the screen automatically, excluding Banana4U window
+          try {
+            screenContext = await window.electron.captureScreen("full", true);
+            console.log("✅ Screen captured successfully (without Banana4U)");
+          } catch (captureError) {
+            console.warn("⚠️ Screen capture error:", captureError);
+            // Continue without screenshot if capture fails
+          }
+        } else {
+          console.log("ℹ️ No screenshot needed, proceeding without screen context");
+        }
+
+        // Now send the message with or without screen context
+        return await sendMessage(message, screenContext);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to get response";
+        setError(errorMessage);
+        setIsLoading(false);
+        throw err;
+      }
+    },
+    [geminiClient, sendMessage]
+  );
+
   const clearHistory = useCallback(() => {
     setConversationHistory([]);
   }, []);
 
   return {
     sendMessage,
+    sendMessageWithAutoScreenshot,
     isLoading,
     error,
     conversationHistory,
