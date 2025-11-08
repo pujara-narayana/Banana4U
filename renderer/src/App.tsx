@@ -22,6 +22,7 @@ const App: React.FC = () => {
     startListening,
     stopListening,
     isSupported: voiceSupported,
+    error: voiceError,
   } = useVoiceInput();
   const { speak, isSpeaking } = useTextToSpeech();
 
@@ -82,8 +83,9 @@ const App: React.FC = () => {
 
   // Handle voice transcript
   useEffect(() => {
-    if (transcript && !isListening) {
+    if (transcript && transcript.trim() && !isListening) {
       // Voice input complete, send to AI
+      console.log('🎤 Sending voice transcript:', transcript);
       handleSendMessage(transcript);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,6 +106,7 @@ const App: React.FC = () => {
         alert('Voice input is not supported in this browser. Please use a Chromium-based browser.');
         return;
       }
+      // Clear any previous errors before starting
       startListening();
     }
   };
@@ -121,27 +124,32 @@ const App: React.FC = () => {
       {/* Main Content */}
       <div className="relative w-full h-full flex flex-col">
         {/* Banana at top center */}
-        <div className="flex-shrink-0 pt-8 pb-4 flex justify-center">
+        <div className="flex-shrink-0 flex justify-center pb-0">
           <Banana state={animationState} />
         </div>
 
         {/* Chat Messages Area */}
         <div
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto px-4 pb-24"
-          style={{ scrollbarWidth: 'thin' }}
+          className="overflow-y-auto px-3 pb-20 -mt-2"
+          style={{ height: '150px', scrollbarWidth: 'thin' }}
         >
-          <div className="max-w-2xl mx-auto space-y-2">
+          {voiceError && (
+            <div className="text-red-500 text-xs text-center mb-2 px-2">
+              {voiceError}
+            </div>
+          )}
+          <div className="max-w-full mx-auto space-y-1.5">
             {messages.map((message) => (
               <ChatBubble key={message.id} message={message} />
             ))}
             {isLoading && (
-              <div className="flex justify-end mb-2">
-                <div className="bg-gray-700 text-white px-4 py-2 rounded-2xl rounded-br-sm">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex justify-end mb-1">
+                <div className="bg-gray-700 text-white px-2 py-1 rounded-xl rounded-br-sm">
+                  <div className="flex gap-0.5">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
