@@ -1,5 +1,5 @@
-export const APP_NAME = 'Banana4U';
-export const APP_VERSION = '1.0.0';
+export const APP_NAME = "Banana4U";
+export const APP_VERSION = "1.0.0";
 
 // Window Configuration
 export const WINDOW_CONFIG = {
@@ -15,62 +15,67 @@ export const WINDOW_CONFIG = {
 
 // API Configuration
 export const API_ENDPOINTS = {
-  GEMINI: 'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-exp:generateContent',
-  WHISPER: 'https://api.openai.com/v1/audio/transcriptions',
-  ELEVENLABS: 'https://api.elevenlabs.io/v1/text-to-speech',
+  // Use Gemini 1.5 Flash (stable, widely available)
+  // Note: Gemini 2.0 models may require allowlist access
+  GEMINI:
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+  GEMINI_STREAM:
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent",
+  WHISPER: "https://api.openai.com/v1/audio/transcriptions",
+  ELEVENLABS: "https://api.elevenlabs.io/v1/text-to-speech",
 };
 
 // IPC Channels
 export const IPC_CHANNELS = {
   // Window management
-  WINDOW_MINIMIZE: 'window:minimize',
-  WINDOW_CLOSE: 'window:close',
-  WINDOW_TOGGLE_ALWAYS_ON_TOP: 'window:toggle-always-on-top',
-  WINDOW_SET_OPACITY: 'window:set-opacity',
+  WINDOW_MINIMIZE: "window:minimize",
+  WINDOW_CLOSE: "window:close",
+  WINDOW_TOGGLE_ALWAYS_ON_TOP: "window:toggle-always-on-top",
+  WINDOW_SET_OPACITY: "window:set-opacity",
 
   // Screen capture
-  CAPTURE_SCREEN: 'screen:capture',
-  CAPTURE_ACTIVE_WINDOW: 'screen:capture-active',
-  CAPTURE_REGION: 'screen:capture-region',
+  CAPTURE_SCREEN: "screen:capture",
+  CAPTURE_ACTIVE_WINDOW: "screen:capture-active",
+  CAPTURE_REGION: "screen:capture-region",
 
   // Audio
-  AUDIO_START_RECORDING: 'audio:start-recording',
-  AUDIO_STOP_RECORDING: 'audio:stop-recording',
-  AUDIO_PLAY_SOUND: 'audio:play-sound',
+  AUDIO_START_RECORDING: "audio:start-recording",
+  AUDIO_STOP_RECORDING: "audio:stop-recording",
+  AUDIO_PLAY_SOUND: "audio:play-sound",
 
   // Settings
-  SETTINGS_GET: 'settings:get',
-  SETTINGS_SET: 'settings:set',
-  SETTINGS_RESET: 'settings:reset',
+  SETTINGS_GET: "settings:get",
+  SETTINGS_SET: "settings:set",
+  SETTINGS_RESET: "settings:reset",
 
   // Hotkeys
-  HOTKEY_REGISTER: 'hotkey:register',
-  HOTKEY_UNREGISTER: 'hotkey:unregister',
+  HOTKEY_REGISTER: "hotkey:register",
+  HOTKEY_UNREGISTER: "hotkey:unregister",
 
   // System
-  GET_SYSTEM_INFO: 'system:get-info',
+  GET_SYSTEM_INFO: "system:get-info",
 };
 
 // Animation States
 export const ANIMATION_STATES = {
-  IDLE: 'idle',
-  LISTENING: 'listening',
-  THINKING: 'thinking',
-  SPEAKING: 'speaking',
-  HAPPY: 'happy',
-  CONFUSED: 'confused',
-  EXCITED: 'excited',
-  SLEEPING: 'sleeping',
+  IDLE: "idle",
+  LISTENING: "listening",
+  THINKING: "thinking",
+  SPEAKING: "speaking",
+  HAPPY: "happy",
+  CONFUSED: "confused",
+  EXCITED: "excited",
+  SLEEPING: "sleeping",
 };
 
 // Banana Personalities
 export const PERSONALITIES = {
-  DEFAULT: 'default',
-  STUDY: 'study',
-  HYPE: 'hype',
-  CHILL: 'chill',
-  CODE: 'code',
-  MEME: 'meme',
+  DEFAULT: "default",
+  STUDY: "study",
+  HYPE: "hype",
+  CHILL: "chill",
+  CODE: "code",
+  MEME: "meme",
 };
 
 // Points Configuration
