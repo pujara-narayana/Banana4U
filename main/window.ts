@@ -54,7 +54,8 @@ export function createMainWindow(): BrowserWindow {
     mainWindow.loadURL('http://localhost:3000');
   } else {
     // In production, load from built files
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    // __dirname is dist/main/main/, so we need to go up two levels to reach dist/renderer/
+    mainWindow.loadFile(path.join(__dirname, '../../renderer/index.html'));
   }
 
   // Save window position when moved
