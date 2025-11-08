@@ -8,6 +8,14 @@
     --banana-dark: #c99700;
     --background: rgba(0, 0, 0, 0);
   }
+
+  body {
+    background: transparent !important;
+  }
+
+  #root {
+    background: transparent !important;
+  }
 }
 
 @layer components {
@@ -47,6 +55,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -54,18 +63,24 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(255, 214, 10, 0.5);
   }
+
   50% {
     box-shadow: 0 0 40px rgba(255, 214, 10, 0.8);
   }
 }
 
 @keyframes sway {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(-2deg);
   }
+
   50% {
     transform: rotate(2deg);
   }
