@@ -138,7 +138,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden ios-glass-background">
+    <div className="w-full h-full relative ios-glass-background">
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/10 via-banana-500/8 to-amber-200/10 animate-gradient" />
       <div className="absolute inset-0 backdrop-blur-2xl" />
@@ -156,7 +156,7 @@ const App: React.FC = () => {
         {/* Chat Messages Area */}
         <div
           ref={chatContainerRef}
-          className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth"
+          className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth no-drag"
           style={{ scrollbarWidth: 'thin' }}
         >
           <div className="max-w-2xl mx-auto space-y-3">
@@ -178,6 +178,10 @@ const App: React.FC = () => {
         </div>
 
         {/* Chat Input at bottom */}
+      </div>
+      {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
+      {/* The wrapper ignores pointer events, but the child re-enables them */}
+      <div className="absolute bottom-4 left-0 right-0 px-4 z-20 pointer-events-none">
         <ChatInput
           onSendMessage={handleSendMessage}
           onVoiceInput={handleVoiceInput}
