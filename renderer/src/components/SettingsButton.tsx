@@ -9,7 +9,7 @@ interface SettingsButtonProps {
 const SettingsButton: React.FC<SettingsButtonProps> = ({ onClick }) => {
   return (
     <motion.button
-      className="no-drag fixed top-4 right-4 w-10 h-10 flex items-center justify-center bg-gray-800 hover:bg-gray-700 rounded-full transition-colors z-50"
+      className="no-drag fixed top-4 left-4 w-11 h-11 flex items-center justify-center bg-yellow-50/20 hover:bg-yellow-50/30 rounded-full transition-colors z-50 backdrop-blur-xl border border-yellow-200/30 shadow-xl"
       onClick={onClick}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
