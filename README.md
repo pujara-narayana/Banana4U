@@ -46,8 +46,8 @@ Floating window that stays on top (or not - your choice). Never disruptive, alwa
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-team/banana4u.git
-cd banana4u
+git clone https://github.com/pujara-narayana/Banana4U.git
+cd Banana4u
 
 # Install dependencies
 npm install
@@ -56,8 +56,11 @@ npm install
 cp .env.example .env
 # Edit .env and add your GEMINI_API_KEY
 
+# Build the app
+npm run build
+
 # Start the app
-npm run dev
+npm start
 ```
 
 The banana window will appear on your screen! 🍌
