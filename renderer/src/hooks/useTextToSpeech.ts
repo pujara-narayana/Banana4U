@@ -10,6 +10,9 @@ interface UseTextToSpeechResult {
   setRate: (rate: number) => void;
   setPitch: (pitch: number) => void;
   setVolume: (volume: number) => void;
+  mute: () => void;
+  unmute: () => void;
+  isMuted: boolean;
 }
 
 export const useTextToSpeech = (): UseTextToSpeechResult => {
@@ -20,8 +23,10 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
   const [rate, setRate] = useState(1.0); // 0.5 to 2.0
   const [pitch, setPitch] = useState(1.0); // 0 to 2
   const [volume, setVolume] = useState(1.0); // 0 to 1
+  const [isMuted, setIsMuted] = useState(false);
 
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const savedVolumeRef = useRef<number>(1.0);
 
   useEffect(() => {
     if ('speechSynthesis' in window) {
@@ -68,6 +73,12 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
         return;
       }
 
+      // Don't speak if muted
+      if (isMuted) {
+        console.log('🔇 TTS is muted, skipping speech');
+        return;
+      }
+
       // Cancel any ongoing speech
       synthRef.current.cancel();
 
@@ -98,7 +109,7 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
 
       synthRef.current.speak(utterance);
     },
-    [isSupported, selectedVoice, rate, pitch, volume]
+    [isSupported, selectedVoice, rate, pitch, volume, isMuted]
   );
 
   const stop = useCallback(() => {
@@ -106,6 +117,24 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
       synthRef.current.cancel();
       setIsSpeaking(false);
     }
+  }, []);
+
+  const mute = useCallback(() => {
+    console.log('🔇 Muting TTS output');
+    savedVolumeRef.current = volume;
+    setVolume(0);
+    setIsMuted(true);
+    // Also stop any current speech
+    if (synthRef.current) {
+      synthRef.current.cancel();
+      setIsSpeaking(false);
+    }
+  }, [volume]);
+
+  const unmute = useCallback(() => {
+    console.log('🔊 Unmuting TTS output');
+    setVolume(savedVolumeRef.current);
+    setIsMuted(false);
   }, []);
 
   return {
@@ -118,5 +147,8 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
     setRate,
     setPitch,
     setVolume,
+    mute,
+    unmute,
+    isMuted,
   };
 };
