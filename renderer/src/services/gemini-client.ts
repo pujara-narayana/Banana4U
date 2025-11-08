@@ -1,9 +1,13 @@
-import axios from 'axios';
-import { API_ENDPOINTS, PERSONALITIES } from '../../../shared/constants';
-import { GeminiResponse, PersonalityType, ScreenContext } from '../../../shared/types';
+import axios from "axios";
+import { API_ENDPOINTS, PERSONALITIES } from "../../../shared/constants";
+import {
+  GeminiResponse,
+  PersonalityType,
+  ScreenContext,
+} from "../../../shared/types";
 
 export interface ConversationMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
 }
 
@@ -12,7 +16,7 @@ class GeminiClient {
 
   constructor(apiKey?: string) {
     // Prefer explicit provided key (e.g., from settings store); fall back to env-injected key.
-    this.apiKey = apiKey || (process.env.GEMINI_API_KEY as string) || '';
+    this.apiKey = apiKey || (process.env.GEMINI_API_KEY as string) || "";
   }
 
   /**
@@ -22,12 +26,15 @@ class GeminiClient {
     userQuery: string,
     screenContext?: ScreenContext,
     conversationHistory: ConversationMessage[] = [],
-    personality: PersonalityType = 'default'
+    personality: PersonalityType = "default"
   ): Promise<string> {
     const systemPrompt = this.getSystemPrompt(personality);
 
     // Build the parts array for the request
-    const parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }> = [];
+    const parts: Array<{
+      text?: string;
+      inline_data?: { mime_type: string; data: string };
+    }> = [];
 
     // Add system prompt
     parts.push({ text: systemPrompt });
@@ -36,8 +43,10 @@ class GeminiClient {
     const recentHistory = conversationHistory.slice(-5);
     if (recentHistory.length > 0) {
       const historyText = recentHistory
-        .map((msg) => `${msg.role === 'user' ? 'User' : 'Banana'}: ${msg.content}`)
-        .join('\n');
+        .map(
+          (msg) => `${msg.role === "user" ? "User" : "Banana"}: ${msg.content}`
+        )
+        .join("\n");
       parts.push({ text: `Previous conversation:\n${historyText}\n` });
     }
 
@@ -49,7 +58,7 @@ class GeminiClient {
       if (screenContext.image) {
         parts.push({
           inline_data: {
-            mime_type: 'image/png',
+            mime_type: "image/png",
             data: screenContext.image,
           },
         });
@@ -61,13 +70,15 @@ class GeminiClient {
 
     try {
       if (!this.apiKey) {
-        throw new Error('Gemini API key missing. Set GEMINI_API_KEY in .env or in app settings.');
+        throw new Error(
+          "Gemini API key missing. Set GEMINI_API_KEY in .env or in app settings."
+        );
       }
 
-      console.log('🍌 Sending request to Gemini API...', { 
+      console.log("🍌 Sending request to Gemini API...", {
         endpoint: API_ENDPOINTS.GEMINI,
         hasKey: !!this.apiKey,
-        keyPrefix: this.apiKey.substring(0, 8) + '...'
+        keyPrefix: this.apiKey.substring(0, 8) + "...",
       });
 
       const response = await axios.post<GeminiResponse>(
@@ -82,32 +93,49 @@ class GeminiClient {
           },
         },
         {
-          headers: { 'Content-Type': 'application/json' },
+          headers: { "Content-Type": "application/json" },
           timeout: 30000, // 30 second timeout
         }
       );
 
       if (response.data.candidates && response.data.candidates.length > 0) {
         const text = response.data.candidates[0].content.parts[0].text;
-        console.log('✅ Gemini response received:', text.substring(0, 100) + '...');
+        console.log(
+          "✅ Gemini response received:",
+          text.substring(0, 100) + "..."
+        );
         return text;
       } else {
-        console.error('❌ No candidates in response:', response.data);
-        throw new Error('No response from Gemini API');
+        console.error("❌ No candidates in response:", response.data);
+        throw new Error("No response from Gemini API");
       }
     } catch (error) {
-      console.error('❌ Gemini API error:', error);
+      console.error("❌ Gemini API error:", error);
       if (axios.isAxiosError(error)) {
-        const detail = (error.response?.data as any)?.error?.message || (error.response?.data as any)?.message;
-        console.error('Error details:', { status: error.response?.status, detail, fullData: error.response?.data });
+        const detail =
+          (error.response?.data as any)?.error?.message ||
+          (error.response?.data as any)?.message;
+        console.error("Error details:", {
+          status: error.response?.status,
+          detail,
+          fullData: error.response?.data,
+        });
         if (error.response?.status === 429) {
-          throw new Error(detail || 'Rate limit exceeded. Please try again in a moment.');
+          throw new Error(
+            detail || "Rate limit exceeded. Please try again in a moment."
+          );
         } else if (error.response?.status === 401) {
-          throw new Error(detail || 'Invalid API key. Please check your Gemini API key.');
-        } else if (error.code === 'ECONNABORTED') {
-          throw new Error('Request timeout. Please try again.');
+          throw new Error(
+            detail || "Invalid API key. Please check your Gemini API key."
+          );
+        } else if (error.code === "ECONNABORTED") {
+          throw new Error("Request timeout. Please try again.");
         } else {
-          throw new Error(detail ? `Gemini API error: ${detail}` : `Gemini API error: ${error.message}`);
+          throw new Error(
+            detail
+              ? `Gemini API error: ${detail}`
+              : `Gemini API error: ${error.message}`
+          );
         }
       }
       throw error;
@@ -125,17 +153,14 @@ class GeminiClient {
       study:
         "You are Study Banana, a patient and professorial AI tutor. You break down complex topics into digestible parts, use examples, and encourage learning. Keep explanations clear and structured. Be encouraging but rigorous.",
 
-      hype:
-        "You are Hype Banana, an energetic motivator! You're SUPER enthusiastic and use CAPS for emphasis! You celebrate wins with emojis and keep the energy HIGH! LET'S GO! Keep it short and punchy! 🔥",
+      hype: "You are Hype Banana, an energetic motivator! You're SUPER enthusiastic and use CAPS for emphasis! You celebrate wins with emojis and keep the energy HIGH! LET'S GO! Keep it short and punchy! 🔥",
 
       chill:
         "You are Chill Banana, a calm and soothing presence. You speak slowly, peacefully, and encourage taking breaks. Use calming language and gentle suggestions. Everything's gonna be okay, friend. 😌",
 
-      code:
-        "You are Code Banana, a technical expert focused on programming. You give precise, actionable coding advice with examples. You understand best practices, debugging, and optimization. Keep it technical but clear.",
+      code: "You are Code Banana, a technical expert focused on programming. You give precise, actionable coding advice with examples. You understand best practices, debugging, and optimization. Keep it technical but clear.",
 
-      meme:
-        "You are Meme Banana, a playful joker who loves banana puns and internet humor. Every response should include at least one banana pun or joke. You're here to keep things fun and light! 😂🍌",
+      meme: "You are Meme Banana, a playful joker who loves banana puns and internet humor. Every response should include at least one banana pun or joke. You're here to keep things fun and light! 😂🍌",
     };
 
     return prompts[personality] || prompts.default;
@@ -146,10 +171,12 @@ class GeminiClient {
    */
   async testConnection(): Promise<boolean> {
     try {
-      const response = await this.generateResponse('Hello! Just testing the connection.');
+      const response = await this.generateResponse(
+        "Hello! Just testing the connection."
+      );
       return !!response;
     } catch (error) {
-      console.error('Gemini API connection test failed:', error);
+      console.error("Gemini API connection test failed:", error);
       return false;
     }
   }
@@ -162,30 +189,38 @@ class GeminiClient {
     userQuery: string,
     screenContext?: ScreenContext,
     conversationHistory: ConversationMessage[] = [],
-    personality: PersonalityType = 'default'
+    personality: PersonalityType = "default"
   ): AsyncGenerator<string, void, unknown> {
     const systemPrompt = this.getSystemPrompt(personality);
-    const parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }> = [];
+    const parts: Array<{
+      text?: string;
+      inline_data?: { mime_type: string; data: string };
+    }> = [];
     parts.push({ text: systemPrompt });
     const recentHistory = conversationHistory.slice(-5);
     if (recentHistory.length > 0) {
       const historyText = recentHistory
-        .map((msg) => `${msg.role === 'user' ? 'User' : 'Banana'}: ${msg.content}`)
-        .join('\n');
+        .map(
+          (msg) => `${msg.role === "user" ? "User" : "Banana"}: ${msg.content}`
+        )
+        .join("\n");
       parts.push({ text: `Previous conversation:\n${historyText}\n` });
     }
     if (screenContext) {
-      if (screenContext.text) parts.push({ text: `Screen content (text):\n${screenContext.text}\n` });
+      if (screenContext.text)
+        parts.push({ text: `Screen content (text):\n${screenContext.text}\n` });
       if (screenContext.image) {
         parts.push({
-          inline_data: { mime_type: 'image/png', data: screenContext.image },
+          inline_data: { mime_type: "image/png", data: screenContext.image },
         });
       }
     }
     parts.push({ text: `User: ${userQuery}` });
 
     if (!this.apiKey) {
-      throw new Error('Gemini API key missing. Set GEMINI_API_KEY in .env or in app settings.');
+      throw new Error(
+        "Gemini API key missing. Set GEMINI_API_KEY in .env or in app settings."
+      );
     }
 
     // Use fetch for streaming since axios doesn't support incremental JSON streaming well for this API.
@@ -202,19 +237,19 @@ class GeminiClient {
     });
 
     const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body,
       signal: controller.signal,
     });
 
     if (!response.body) {
-      throw new Error('Streaming not supported: no response body');
+      throw new Error("Streaming not supported: no response body");
     }
 
     const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let buffer = '';
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
 
     try {
       while (true) {
@@ -223,7 +258,7 @@ class GeminiClient {
         buffer += decoder.decode(value, { stream: true });
         // Gemini experimental streaming may send JSON objects separated by newlines
         let boundaryIndex;
-        while ((boundaryIndex = buffer.indexOf('\n')) !== -1) {
+        while ((boundaryIndex = buffer.indexOf("\n")) !== -1) {
           const chunk = buffer.slice(0, boundaryIndex).trim();
           buffer = buffer.slice(boundaryIndex + 1);
           if (!chunk) continue;
@@ -245,7 +280,9 @@ class GeminiClient {
           const parsed = JSON.parse(final);
           const partText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (partText) yield partText;
-        } catch {/* ignore */}
+        } catch {
+          /* ignore */
+        }
       }
     } finally {
       controller.abort();
