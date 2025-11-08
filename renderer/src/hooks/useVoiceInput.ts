@@ -32,6 +32,7 @@ export const useVoiceInput = (): UseVoiceInputResult => {
       recognition.onstart = () => {
         setIsListening(true);
         setError(null);
+        setTranscript(''); // Clear previous transcript
         console.log('🎤 Voice recognition started');
       };
 
@@ -48,12 +49,36 @@ export const useVoiceInput = (): UseVoiceInputResult => {
           }
         }
 
-        setTranscript(finalTranscript || interimTranscript);
+        const currentTranscript = finalTranscript || interimTranscript;
+        console.log('🎤 Transcript:', currentTranscript);
+        setTranscript(currentTranscript);
       };
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('🎤 Voice recognition error:', event.error);
-        setError(`Speech recognition error: ${event.error}`);
+        console.error('🎤 Voice recognition error:', event.error, event.message);
+        
+        let errorMessage = 'Speech recognition error';
+        switch (event.error) {
+          case 'no-speech':
+            errorMessage = 'No speech detected. Please try again.';
+            break;
+          case 'audio-capture':
+            errorMessage = 'Microphone not found or permission denied.';
+            break;
+          case 'not-allowed':
+            errorMessage = 'Microphone permission denied. Please allow microphone access.';
+            break;
+          case 'network':
+            errorMessage = 'Network error. Please check your connection.';
+            break;
+          case 'aborted':
+            errorMessage = 'Speech recognition aborted.';
+            break;
+          default:
+            errorMessage = `Speech recognition error: ${event.error}`;
+        }
+        
+        setError(errorMessage);
         setIsListening(false);
       };
 
@@ -66,12 +91,16 @@ export const useVoiceInput = (): UseVoiceInputResult => {
     } else {
       setIsSupported(false);
       setError('Speech recognition not supported in this browser');
-      console.warn('Web Speech API not supported');
+      console.warn('⚠️ Web Speech API not supported');
     }
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {
+          // Ignore errors on cleanup
+        }
       }
     };
   }, []);
@@ -84,16 +113,39 @@ export const useVoiceInput = (): UseVoiceInputResult => {
 
     try {
       setTranscript('');
+      setError(null);
       recognitionRef.current.start();
+      console.log('🎤 Starting speech recognition...');
     } catch (err) {
       console.error('Failed to start speech recognition:', err);
-      setError('Failed to start listening');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to start listening';
+      
+      // If already running, stop and restart
+      if (errorMsg.includes('already started')) {
+        try {
+          recognitionRef.current.stop();
+          setTimeout(() => {
+            if (recognitionRef.current) {
+              recognitionRef.current.start();
+            }
+          }, 100);
+        } catch (e) {
+          setError('Failed to restart speech recognition');
+        }
+      } else {
+        setError(errorMsg);
+      }
     }
   }, []);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+        console.log('🎤 Stopping speech recognition...');
+      } catch (err) {
+        console.error('Failed to stop speech recognition:', err);
+      }
     }
   }, [isListening]);
 

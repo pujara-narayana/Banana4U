@@ -1,9 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
-import GeminiClient, { ConversationMessage } from '../services/gemini-client';
-import { PersonalityType, ScreenContext } from '../../../shared/types';
+import { useState, useCallback, useEffect } from "react";
+import GeminiClient, { ConversationMessage } from "../services/gemini-client";
+import { PersonalityType, ScreenContext } from "../../../shared/types";
 
 interface UseBananaAIResult {
-  sendMessage: (message: string, screenContext?: ScreenContext) => Promise<string>;
+  sendMessage: (
+    message: string,
+    screenContext?: ScreenContext
+  ) => Promise<string>;
   isLoading: boolean;
   error: string | null;
   conversationHistory: ConversationMessage[];
@@ -16,8 +19,10 @@ export const useBananaAI = (): UseBananaAIResult => {
   const [geminiClient, setGeminiClient] = useState<GeminiClient | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
-  const [personality, setPersonality] = useState<PersonalityType>('default');
+  const [conversationHistory, setConversationHistory] = useState<
+    ConversationMessage[]
+  >([]);
+  const [personality, setPersonality] = useState<PersonalityType>("default");
 
   // Initialize Gemini client
   useEffect(() => {
@@ -29,13 +34,17 @@ export const useBananaAI = (): UseBananaAIResult => {
         setGeminiClient(client);
 
         // If neither settings nor env provides a key, surface a helpful message once
-        const hasEnvKey = (process.env.GEMINI_API_KEY as string) && (process.env.GEMINI_API_KEY as string) !== '';
+        const hasEnvKey =
+          (process.env.GEMINI_API_KEY as string) &&
+          (process.env.GEMINI_API_KEY as string) !== "";
         if (!settings.geminiApiKey && !hasEnvKey) {
-          setError('No Gemini API key found. Add it in settings or .env (GEMINI_API_KEY).');
+          setError(
+            "No Gemini API key found. Add it in settings or .env (GEMINI_API_KEY)."
+          );
         }
       } catch (err) {
-        console.error('Failed to initialize Gemini client:', err);
-        setError('Failed to initialize AI client');
+        console.error("Failed to initialize Gemini client:", err);
+        setError("Failed to initialize AI client");
       }
     };
 
@@ -45,7 +54,7 @@ export const useBananaAI = (): UseBananaAIResult => {
   const sendMessage = useCallback(
     async (message: string, screenContext?: ScreenContext): Promise<string> => {
       if (!geminiClient) {
-        const errorMsg = 'Gemini client not initialized';
+        const errorMsg = "Gemini client not initialized";
         setError(errorMsg);
         throw new Error(errorMsg);
       }
@@ -56,7 +65,7 @@ export const useBananaAI = (): UseBananaAIResult => {
       try {
         // Add user message to history
         const userMessage: ConversationMessage = {
-          role: 'user',
+          role: "user",
           content: message,
         };
 
@@ -72,7 +81,7 @@ export const useBananaAI = (): UseBananaAIResult => {
 
         // Add assistant response to history
         const assistantMessage: ConversationMessage = {
-          role: 'assistant',
+          role: "assistant",
           content: response,
         };
 
@@ -81,7 +90,8 @@ export const useBananaAI = (): UseBananaAIResult => {
 
         return response;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to get response';
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to get response";
         setError(errorMessage);
         setIsLoading(false);
         throw err;
