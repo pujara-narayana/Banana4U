@@ -1,221 +1,159 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from "react";
+import axios from "axios";
+import { API_ENDPOINTS } from "../../../shared/constants";
 
 interface UseVoiceInputResult {
   isListening: boolean;
   transcript: string;
   startListening: () => void;
   stopListening: () => void;
+  clearTranscript: () => void;
   error: string | null;
   isSupported: boolean;
 }
 
 export const useVoiceInput = (): UseVoiceInputResult => {
   const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSupported, setIsSupported] = useState(false);
+  const [isSupported] = useState(
+    typeof navigator !== "undefined" &&
+      navigator.mediaDevices &&
+      typeof navigator.mediaDevices.getUserMedia === "function"
+  );
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  useEffect(() => {
-    // Check if browser supports Web Speech API
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (SpeechRecognition) {
-      setIsSupported(true);
-      const recognition = new SpeechRecognition();
-
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        setError(null);
-        setTranscript(''); // Clear previous transcript
-        console.log('🎤 Voice recognition started');
-      };
-
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcriptPart = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcriptPart;
-          } else {
-            interimTranscript += transcriptPart;
-          }
-        }
-
-        const currentTranscript = finalTranscript || interimTranscript;
-        console.log('🎤 Transcript:', currentTranscript);
-        setTranscript(currentTranscript);
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.error('🎤 Voice recognition error:', event.error, event.message);
-        
-        let errorMessage = 'Speech recognition error';
-        switch (event.error) {
-          case 'no-speech':
-            errorMessage = 'No speech detected. Please try again.';
-            break;
-          case 'audio-capture':
-            errorMessage = 'Microphone not found or permission denied.';
-            break;
-          case 'not-allowed':
-            errorMessage = 'Microphone permission denied. Please allow microphone access.';
-            break;
-          case 'network':
-            errorMessage = 'Network error. Please check your connection.';
-            break;
-          case 'aborted':
-            errorMessage = 'Speech recognition aborted.';
-            break;
-          default:
-            errorMessage = `Speech recognition error: ${event.error}`;
-        }
-        
-        setError(errorMessage);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        console.log('🎤 Voice recognition ended');
-      };
-
-      recognitionRef.current = recognition;
-    } else {
-      setIsSupported(false);
-      setError('Speech recognition not supported in this browser');
-      console.warn('⚠️ Web Speech API not supported');
+  const startListening = useCallback(async () => {
+    if (!isSupported) {
+      setError("MediaRecorder not supported");
+      alert(
+        "Audio recording not supported. Please use Chrome, Edge, or Safari."
+      );
+      return;
     }
 
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.abort();
-        } catch (e) {
-          // Ignore errors on cleanup
-        }
-      }
-    };
-  }, []);
-
-  const startListening = useCallback(() => {
-    if (!recognitionRef.current) {
-      setError('Speech recognition not initialized');
+    const apiKey = (process.env.GEMINI_API_KEY as string) || "";
+    if (!apiKey) {
+      setError("Gemini API key not configured");
+      alert("Gemini API key missing");
       return;
     }
 
     try {
-      setTranscript('');
+      setTranscript("");
       setError(null);
-      recognitionRef.current.start();
-      console.log('🎤 Starting speech recognition...');
-    } catch (err) {
-      console.error('Failed to start speech recognition:', err);
-      const errorMsg = err instanceof Error ? err.message : 'Failed to start listening';
-      
-      // If already running, stop and restart
-      if (errorMsg.includes('already started')) {
-        try {
-          recognitionRef.current.stop();
-          setTimeout(() => {
-            if (recognitionRef.current) {
-              recognitionRef.current.start();
-            }
-          }, 100);
-        } catch (e) {
-          setError('Failed to restart speech recognition');
-        }
-      } else {
-        setError(errorMsg);
-      }
-    }
-  }, []);
+      audioChunksRef.current = [];
 
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current && isListening) {
-      try {
-        recognitionRef.current.stop();
-        console.log('🎤 Stopping speech recognition...');
-      } catch (err) {
-        console.error('Failed to stop speech recognition:', err);
+      console.log("🎤 Requesting microphone...");
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+
+      let mimeType = "audio/webm";
+      if (
+        !MediaRecorder.isTypeSupported("audio/webm") &&
+        MediaRecorder.isTypeSupported("audio/mp4")
+      ) {
+        mimeType = "audio/mp4";
       }
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        stream.getTracks().forEach((track) => track.stop());
+        if (audioBlob.size > 0) await transcribeWithGemini(audioBlob, apiKey);
+      };
+
+      mediaRecorder.start(1000);
+      mediaRecorderRef.current = mediaRecorder;
+      setIsListening(true);
+      console.log("🎤 Local recording started");
+    } catch (err: any) {
+      const message =
+        err.name === "NotAllowedError"
+          ? "Microphone permission denied"
+          : "Failed to access microphone";
+      setError(message);
+      alert(message);
+    }
+  }, [isSupported]);
+
+  const stopListening = useCallback(async () => {
+    if (mediaRecorderRef.current && isListening) {
+      mediaRecorderRef.current.stop();
+      setIsListening(false);
     }
   }, [isListening]);
+
+  const transcribeWithGemini = async (audioBlob: Blob, apiKey: string) => {
+    try {
+      const base64Audio = await blobToBase64(audioBlob);
+      const base64Data = base64Audio.split(",")[1];
+
+      console.log("🎤 Gemini transcribing...");
+
+      const response = await axios.post(
+        `${API_ENDPOINTS.GEMINI}?key=${apiKey}`,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: "Transcribe this audio. Return only the spoken words.",
+                },
+                {
+                  inline_data: { mime_type: audioBlob.type, data: base64Data },
+                },
+              ],
+            },
+          ],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 },
+        },
+        { headers: { "Content-Type": "application/json" }, timeout: 30000 }
+      );
+
+      if (response.data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        const text = response.data.candidates[0].content.parts[0].text.trim();
+        console.log("✅ Transcribed:", text);
+        setTranscript(text);
+      }
+    } catch (err: any) {
+      console.error("❌ Transcription error:", err);
+      setError("Transcription failed");
+      setTranscript("[Failed]");
+    }
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const clearTranscript = useCallback(() => setTranscript(""), []);
 
   return {
     isListening,
     transcript,
     startListening,
     stopListening,
+    clearTranscript,
     error,
     isSupported,
   };
-};
-
-// Type definitions for Web Speech API (if not available in TypeScript)
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onaudiostart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onaudioend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-  onnomatch: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onsoundstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onsoundend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onspeechstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onspeechend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-}
-
-interface SpeechRecognitionEvent extends Event {
-  readonly resultIndex: number;
-  readonly results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionResultList {
-  readonly length: number;
-  item(index: number): SpeechRecognitionResult;
-  [index: number]: SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-  readonly length: number;
-  readonly isFinal: boolean;
-  item(index: number): SpeechRecognitionAlternative;
-  [index: number]: SpeechRecognitionAlternative;
-}
-
-interface SpeechRecognitionAlternative {
-  readonly transcript: string;
-  readonly confidence: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  readonly error: string;
-  readonly message: string;
-}
-
-declare var SpeechRecognition: {
-  prototype: SpeechRecognition;
-  new (): SpeechRecognition;
 };

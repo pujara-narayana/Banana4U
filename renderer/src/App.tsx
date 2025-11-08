@@ -136,6 +136,13 @@ const App: React.FC = () => {
   };
 
   return (
+    <div className="w-full h-full relative overflow-hidden ios-glass-background">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/10 via-banana-500/8 to-amber-200/10 animate-gradient" />
+      <div className="absolute inset-0 backdrop-blur-2xl" />
+
+      {/* Settings Button - Upper Left */}
+      <SettingsButton onClick={handleSettings} />
     <div className="w-full h-full relative overflow-hidden">
       {/* Settings Panel */}
       <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
@@ -146,12 +153,41 @@ const App: React.FC = () => {
           {/* Settings Button - Upper Right */}
           <SettingsButton onClick={handleSettings} />
 
+      {/* Main Content */}
+      <div className="relative w-full h-full flex flex-col z-10">
+        {/* Banana at top center */}
+        <div className="flex-shrink-0 pt-8 pb-4 flex justify-center">
+          <Banana state={animationState} />
+        </div>
           <div className="relative w-full h-full flex flex-col">
             {/* Banana at top center */}
             <div className="flex-shrink-0 flex justify-center pb-0">
               <Banana state={animationState} />
             </div>
 
+        {/* Chat Messages Area */}
+        <div
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth"
+          style={{ scrollbarWidth: 'thin' }}
+        >
+          <div className="max-w-2xl mx-auto space-y-3">
+            {messages.map((message) => (
+              <ChatBubble key={message.id} message={message} />
+            ))}
+            {isLoading && (
+              <div className="flex justify-end mb-2">
+                <div className="glass-bubble px-4 py-2 rounded-2xl rounded-br-sm">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
             {/* Chat Messages Area */}
             <div
               ref={chatContainerRef}

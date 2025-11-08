@@ -17,9 +17,9 @@ export const WINDOW_CONFIG = {
 export const API_ENDPOINTS = {
   // Use Gemini 2.5 Flash (latest stable model)
   GEMINI:
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
   GEMINI_STREAM:
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent",
   WHISPER: "https://api.openai.com/v1/audio/transcriptions",
   ELEVENLABS: "https://api.elevenlabs.io/v1/text-to-speech",
 };
