@@ -120,10 +120,34 @@ const Banana: React.FC<BananaProps> = ({ state }) => {
 
         {/* Face overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {/* Eyes */}
-          <div className="flex gap-4 mb-2">
+          {/* Sunglasses */}
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center justify-center">
+            <svg
+              viewBox="0 0 60 20"
+              className="w-16 h-6"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {/* Left lens */}
+              <ellipse cx="15" cy="10" rx="12" ry="8" fill="#1a1a1a" />
+              {/* Right lens */}
+              <ellipse cx="45" cy="10" rx="12" ry="8" fill="#1a1a1a" />
+              {/* Bridge */}
+              <rect x="25" y="8" width="4" height="4" fill="#1a1a1a" />
+              {/* Frame */}
+              <path
+                d="M3 10 Q3 3, 15 3 Q27 3, 27 10 Q27 17, 15 17 Q3 17, 3 10 M33 10 Q33 3, 45 3 Q57 3, 57 10 Q57 17, 45 17 Q33 17, 33 10"
+                stroke="#1a1a1a"
+                strokeWidth="1.5"
+                fill="none"
+              />
+            </svg>
+          </div>
+
+          {/* Eyes (behind sunglasses) */}
+          <div className="flex gap-4 mb-2 opacity-60">
             <motion.div
-              className="w-3 h-3 bg-black rounded-full"
+              className="w-2.5 h-2.5 bg-black rounded-full"
               animate={
                 state === 'sleeping'
                   ? { scaleY: 0.1 }
@@ -134,7 +158,7 @@ const Banana: React.FC<BananaProps> = ({ state }) => {
               transition={{ duration: 0.3 }}
             />
             <motion.div
-              className="w-3 h-3 bg-black rounded-full"
+              className="w-2.5 h-2.5 bg-black rounded-full"
               animate={
                 state === 'sleeping'
                   ? { scaleY: 0.1 }
@@ -148,7 +172,7 @@ const Banana: React.FC<BananaProps> = ({ state }) => {
 
           {/* Mouth */}
           <motion.div
-            className="w-6 h-3 border-b-2 border-black rounded-full"
+            className="w-6 h-3 border-b-2 border-black rounded-full mt-1"
             animate={
               state === 'happy'
                 ? { scaleX: 1.5 }

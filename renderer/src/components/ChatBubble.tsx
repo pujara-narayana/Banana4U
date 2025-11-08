@@ -1,30 +1,36 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Message } from '../../../shared/types';
 
 interface ChatBubbleProps {
-  message: string;
+  message: Message;
 }
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
+  const isUser = message.role === 'user';
+
   return (
     <motion.div
-      className="chat-bubble shadow-lg"
+      className={`flex ${isUser ? 'justify-start' : 'justify-end'} mb-2`}
       initial={{ opacity: 0, y: 10, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.9 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <p className="leading-relaxed">{message}</p>
-
-      {/* Speech bubble tail */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
-        <div
-          className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent"
-          style={{
-            borderTopColor: 'rgba(255, 255, 255, 0.1)',
-            filter: 'blur(10px)',
-          }}
-        />
+      <div
+        className={`max-w-xs px-4 py-2 rounded-2xl ${
+          isUser
+            ? 'bg-gray-300 text-gray-800 rounded-bl-sm'
+            : 'bg-gray-700 text-white rounded-br-sm'
+        }`}
+        style={{
+          borderRadius: '16px',
+          ...(isUser
+            ? { borderBottomLeftRadius: '4px' }
+            : { borderBottomRightRadius: '4px' }),
+        }}
+      >
+        <p className="text-sm leading-relaxed break-words">{message.content}</p>
       </div>
     </motion.div>
   );
