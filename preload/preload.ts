@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS } from '../shared/constants';
-import { ElectronAPI, UserSettings, ScreenContext } from '../shared/types';
+import { ElectronAPI, UserSettings, ScreenContext, RegisterParams, LoginParams, IPCResponse, AuthUser, UserProfile, ConversationHistory, Message } from '../shared/types';
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
@@ -90,6 +90,70 @@ const electronAPI: ElectronAPI = {
       return result.data;
     }
     throw new Error(result.error || 'Failed to get system info');
+  },
+
+  // Authentication
+  register: async (params: RegisterParams) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.AUTH_REGISTER, params) as IPCResponse<AuthUser>;
+  },
+
+  login: async (params: LoginParams) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.AUTH_LOGIN, params) as IPCResponse<AuthUser>;
+  },
+
+  logout: async () => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.AUTH_LOGOUT) as IPCResponse<void>;
+  },
+
+  getCurrentUser: async () => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.AUTH_GET_CURRENT_USER) as IPCResponse<AuthUser>;
+  },
+
+  checkUsername: async (username: string) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.AUTH_CHECK_USERNAME, username) as IPCResponse<boolean>;
+  },
+
+  checkEmail: async (email: string) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.AUTH_CHECK_EMAIL, email) as IPCResponse<boolean>;
+  },
+
+  // User Profile
+  getProfile: async (userId: string) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.PROFILE_GET, userId) as IPCResponse<UserProfile>;
+  },
+
+  updateProfile: async (userId: string, updates: Partial<UserProfile>) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.PROFILE_UPDATE, userId, updates) as IPCResponse<void>;
+  },
+
+  // Conversations
+  createConversation: async (userId: string, personality?: string) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.CONVERSATION_CREATE, userId, personality) as IPCResponse<string>;
+  },
+
+  getConversation: async (conversationId: string) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.CONVERSATION_GET, conversationId) as IPCResponse<ConversationHistory>;
+  },
+
+  listConversations: async (userId: string, limit?: number) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.CONVERSATION_LIST, userId, limit) as IPCResponse<ConversationHistory[]>;
+  },
+
+  updateConversation: async (conversationId: string, updates: { title?: string }) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.CONVERSATION_UPDATE, conversationId, updates) as IPCResponse<void>;
+  },
+
+  deleteConversation: async (conversationId: string) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.CONVERSATION_DELETE, conversationId) as IPCResponse<void>;
+  },
+
+  // Messages
+  addMessage: async (conversationId: string, message: Message) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.MESSAGE_ADD, conversationId, message) as IPCResponse<void>;
+  },
+
+  getMessages: async (conversationId: string) => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.MESSAGE_GET_ALL, conversationId) as IPCResponse<Message[]>;
   },
 };
 

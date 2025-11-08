@@ -26,31 +26,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="no-drag fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 flex items-center gap-2 z-50"
+      className="no-drag fixed bottom-2 left-1/2 -translate-x-1/2 w-full max-w-[260px] px-3 flex items-center gap-1.5 z-50"
     >
       <input
         type="text"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         placeholder="Type your message..."
-        className="flex-1 bg-white text-gray-800 px-4 py-3 rounded-xl border-none outline-none shadow-lg text-sm"
+        className="flex-1 bg-white text-gray-800 px-2.5 py-1.5 rounded-lg border-none outline-none shadow-lg text-xs"
       />
       <motion.button
         type="button"
         onClick={onVoiceInput}
-        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+        className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
           isListening
-            ? 'bg-red-500 hover:bg-red-600'
+            ? 'bg-red-500 hover:bg-red-600 animate-pulse'
             : 'bg-blue-500 hover:bg-blue-600'
         }`}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        title={isListening ? 'Stop listening' : 'Voice input'}
+        title={isListening ? 'Stop listening (click again)' : 'Start voice input'}
       >
         {isListening ? (
-          <MicOff size={20} color="white" />
+          <MicOff size={14} color="white" />
         ) : (
-          <Mic size={20} color="white" />
+          <Mic size={14} color="white" />
         )}
       </motion.button>
     </form>

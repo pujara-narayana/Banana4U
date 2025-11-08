@@ -97,7 +97,7 @@ const Banana: React.FC<BananaProps> = ({ state }) => {
       initial="idle"
     >
       {/* Banana Body */}
-      <div className="relative w-32 h-32">
+      <div className="relative w-20 h-20">
         {/* Simple banana SVG placeholder */}
         <svg
           viewBox="0 0 100 100"

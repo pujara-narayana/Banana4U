@@ -11,26 +11,26 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
 
   return (
     <motion.div
-      className={`flex ${isUser ? 'justify-start' : 'justify-end'} mb-2`}
+      className={`flex ${isUser ? 'justify-start' : 'justify-end'}`}
       initial={{ opacity: 0, y: 10, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.9 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
       <div
-        className={`max-w-xs px-4 py-2 rounded-2xl ${
+        className={`max-w-[200px] px-2.5 py-1.5 rounded-xl ${
           isUser
             ? 'bg-gray-300 text-gray-800 rounded-bl-sm'
             : 'bg-gray-700 text-white rounded-br-sm'
         }`}
         style={{
-          borderRadius: '16px',
+          borderRadius: '12px',
           ...(isUser
             ? { borderBottomLeftRadius: '4px' }
             : { borderBottomRightRadius: '4px' }),
         }}
       >
-        <p className="text-sm leading-relaxed break-words">{message.content}</p>
+        <p className="text-xs leading-relaxed break-words">{message.content}</p>
       </div>
     </motion.div>
   );

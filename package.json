@@ -31,6 +31,7 @@
     "framer-motion": "^10.16.0",
     "howler": "^2.2.4",
     "lucide-react": "^0.553.0",
+    "object-hash": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sharp": "^0.33.0"
@@ -48,6 +49,7 @@
     "css-loader": "^6.8.1",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.0",
+    "electron-reload": "^2.0.0-alpha.1",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
