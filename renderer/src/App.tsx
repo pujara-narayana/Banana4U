@@ -28,8 +28,24 @@ const App: React.FC = () => {
     stopListening,
     error: voiceError,
     isSupported: voiceSupported,
+    isConversationalMode,
+    startConversationalMode,
+    stopConversationalMode,
+    setSpeakingCallback,
+    setStopSpeakingCallback,
+    setMuteSpeakingCallback,
+    setUnmuteSpeakingCallback,
+    setLastAIResponse,
   } = useVoiceInput();
-  const { speak, isSpeaking } = useTextToSpeech();
+  const { speak, isSpeaking, stop: stopSpeaking, mute: muteSpeaking, unmute: unmuteSpeaking } = useTextToSpeech();
+
+  // Set up speaking callbacks for conversational mode
+  useEffect(() => {
+    setSpeakingCallback(() => isSpeaking);
+    setStopSpeakingCallback(() => stopSpeaking);
+    setMuteSpeakingCallback(() => muteSpeaking);
+    setUnmuteSpeakingCallback(() => unmuteSpeaking);
+  }, [isSpeaking, setSpeakingCallback, stopSpeaking, setStopSpeakingCallback, muteSpeaking, setMuteSpeakingCallback, unmuteSpeaking, setUnmuteSpeakingCallback]);
 
   // Update animation state based on various states
   useEffect(() => {
@@ -72,6 +88,9 @@ const App: React.FC = () => {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
+      // Store AI response for voice filtering
+      setLastAIResponse(response);
+
       // Speak the response
       speak(response);
 
@@ -92,6 +111,20 @@ const App: React.FC = () => {
   // Handle voice transcript
   useEffect(() => {
     if (transcript && !isListening) {
+      // Don't send error messages to AI
+      if (transcript.startsWith("Oops!") || transcript === "[Failed]") {
+        console.log('⚠️ Skipping error message:', transcript);
+        // Display error to user without sending to AI
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: transcript,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        return;
+      }
+      
       // Voice input complete, send to AI
       console.log('📝 Sending transcript to AI:', transcript);
       handleSendMessage(transcript);
@@ -129,6 +162,36 @@ const App: React.FC = () => {
         return;
       }
       startListening();
+    }
+  };
+
+  const handleConversationalMode = () => {
+    if (isConversationalMode) {
+      stopConversationalMode();
+    } else {
+      if (!voiceSupported) {
+        alert('Voice input is not supported in this browser. Please use a Chromium-based browser.');
+        return;
+      }
+      
+      // Warn user about headphones for best experience
+      const hasSeenWarning = localStorage.getItem('conversational-mode-warning-seen');
+      if (!hasSeenWarning) {
+        const useHeadphones = confirm(
+          '🎧 Conversational Mode works best with HEADPHONES!\n\n' +
+          'Without headphones, the microphone may pick up the AI\'s voice from your speakers.\n\n' +
+          '✅ Click OK if you\'re using headphones\n' +
+          '❌ Click Cancel to setup headphones first'
+        );
+        
+        if (!useHeadphones) {
+          return;
+        }
+        
+        localStorage.setItem('conversational-mode-warning-seen', 'true');
+      }
+      
+      startConversationalMode();
     }
   };
 
@@ -181,7 +244,9 @@ const App: React.FC = () => {
         <ChatInput
           onSendMessage={handleSendMessage}
           onVoiceInput={handleVoiceInput}
+          onConversationalMode={handleConversationalMode}
           isListening={isListening}
+          isConversationalMode={isConversationalMode}
         />
       </div>
     </div>
