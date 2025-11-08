@@ -15,12 +15,11 @@ export const WINDOW_CONFIG = {
 
 // API Configuration
 export const API_ENDPOINTS = {
-  // Use Gemini 1.5 Flash (stable, widely available)
-  // Note: Gemini 2.0 models may require allowlist access
+  // Use Gemini 2.5 Flash (latest stable model)
   GEMINI:
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
   GEMINI_STREAM:
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent",
   WHISPER: "https://api.openai.com/v1/audio/transcriptions",
   ELEVENLABS: "https://api.elevenlabs.io/v1/text-to-speech",
 };
