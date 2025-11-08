@@ -1,6 +1,8 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
+// Load environment variables from .env for build-time injection
+require('dotenv').config();
 
 module.exports = {
   target: 'electron-renderer',
@@ -48,9 +50,10 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './renderer/public/index.html',
     }),
+    // Only inject vars we explicitly need; let webpack set NODE_ENV based on --mode to avoid conflicts.
     new webpack.DefinePlugin({
-      'global': 'window',
-      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+      global: 'window',
+      'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || ''),
     }),
   ],
   devServer: {

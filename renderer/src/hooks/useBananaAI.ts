@@ -24,11 +24,14 @@ export const useBananaAI = (): UseBananaAIResult => {
     const initClient = async () => {
       try {
         const settings = await window.electron.getSettings();
-        if (settings.geminiApiKey) {
-          const client = new GeminiClient(settings.geminiApiKey);
-          setGeminiClient(client);
-        } else {
-          setError('No Gemini API key found. Please add your API key in settings.');
+        // Always create a client: it will fall back to env-injected key if none provided in settings
+        const client = new GeminiClient(settings.geminiApiKey || undefined);
+        setGeminiClient(client);
+
+        // If neither settings nor env provides a key, surface a helpful message once
+        const hasEnvKey = (process.env.GEMINI_API_KEY as string) && (process.env.GEMINI_API_KEY as string) !== '';
+        if (!settings.geminiApiKey && !hasEnvKey) {
+          setError('No Gemini API key found. Add it in settings or .env (GEMINI_API_KEY).');
         }
       } catch (err) {
         console.error('Failed to initialize Gemini client:', err);
