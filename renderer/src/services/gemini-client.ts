@@ -10,8 +10,9 @@ export interface ConversationMessage {
 class GeminiClient {
   private apiKey: string;
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
+  constructor(apiKey?: string) {
+    // Prefer explicit provided key (e.g., from settings store); fall back to env-injected key.
+    this.apiKey = apiKey || (process.env.GEMINI_API_KEY as string) || '';
   }
 
   /**
@@ -59,6 +60,16 @@ class GeminiClient {
     parts.push({ text: `User: ${userQuery}` });
 
     try {
+      if (!this.apiKey) {
+        throw new Error('Gemini API key missing. Set GEMINI_API_KEY in .env or in app settings.');
+      }
+
+      console.log('🍌 Sending request to Gemini API...', { 
+        endpoint: API_ENDPOINTS.GEMINI,
+        hasKey: !!this.apiKey,
+        keyPrefix: this.apiKey.substring(0, 8) + '...'
+      });
+
       const response = await axios.post<GeminiResponse>(
         `${API_ENDPOINTS.GEMINI}?key=${this.apiKey}`,
         {
@@ -78,20 +89,25 @@ class GeminiClient {
 
       if (response.data.candidates && response.data.candidates.length > 0) {
         const text = response.data.candidates[0].content.parts[0].text;
+        console.log('✅ Gemini response received:', text.substring(0, 100) + '...');
         return text;
       } else {
+        console.error('❌ No candidates in response:', response.data);
         throw new Error('No response from Gemini API');
       }
     } catch (error) {
+      console.error('❌ Gemini API error:', error);
       if (axios.isAxiosError(error)) {
+        const detail = (error.response?.data as any)?.error?.message || (error.response?.data as any)?.message;
+        console.error('Error details:', { status: error.response?.status, detail, fullData: error.response?.data });
         if (error.response?.status === 429) {
-          throw new Error('Rate limit exceeded. Please try again in a moment.');
+          throw new Error(detail || 'Rate limit exceeded. Please try again in a moment.');
         } else if (error.response?.status === 401) {
-          throw new Error('Invalid API key. Please check your Gemini API key.');
+          throw new Error(detail || 'Invalid API key. Please check your Gemini API key.');
         } else if (error.code === 'ECONNABORTED') {
           throw new Error('Request timeout. Please try again.');
         } else {
-          throw new Error(`Gemini API error: ${error.message}`);
+          throw new Error(detail ? `Gemini API error: ${detail}` : `Gemini API error: ${error.message}`);
         }
       }
       throw error;
@@ -135,6 +151,104 @@ class GeminiClient {
     } catch (error) {
       console.error('Gemini API connection test failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * Stream response from Gemini API (experimental)
+   * Returns an async generator yielding partial text chunks as they arrive.
+   */
+  async *streamResponse(
+    userQuery: string,
+    screenContext?: ScreenContext,
+    conversationHistory: ConversationMessage[] = [],
+    personality: PersonalityType = 'default'
+  ): AsyncGenerator<string, void, unknown> {
+    const systemPrompt = this.getSystemPrompt(personality);
+    const parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }> = [];
+    parts.push({ text: systemPrompt });
+    const recentHistory = conversationHistory.slice(-5);
+    if (recentHistory.length > 0) {
+      const historyText = recentHistory
+        .map((msg) => `${msg.role === 'user' ? 'User' : 'Banana'}: ${msg.content}`)
+        .join('\n');
+      parts.push({ text: `Previous conversation:\n${historyText}\n` });
+    }
+    if (screenContext) {
+      if (screenContext.text) parts.push({ text: `Screen content (text):\n${screenContext.text}\n` });
+      if (screenContext.image) {
+        parts.push({
+          inline_data: { mime_type: 'image/png', data: screenContext.image },
+        });
+      }
+    }
+    parts.push({ text: `User: ${userQuery}` });
+
+    if (!this.apiKey) {
+      throw new Error('Gemini API key missing. Set GEMINI_API_KEY in .env or in app settings.');
+    }
+
+    // Use fetch for streaming since axios doesn't support incremental JSON streaming well for this API.
+    const url = `${API_ENDPOINTS.GEMINI_STREAM}?key=${this.apiKey}`;
+    const controller = new AbortController();
+    const body = JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1000,
+        topP: 0.95,
+        topK: 40,
+      },
+    });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      signal: controller.signal,
+    });
+
+    if (!response.body) {
+      throw new Error('Streaming not supported: no response body');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        // Gemini experimental streaming may send JSON objects separated by newlines
+        let boundaryIndex;
+        while ((boundaryIndex = buffer.indexOf('\n')) !== -1) {
+          const chunk = buffer.slice(0, boundaryIndex).trim();
+          buffer = buffer.slice(boundaryIndex + 1);
+          if (!chunk) continue;
+          try {
+            const parsed = JSON.parse(chunk);
+            const partText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (partText) {
+              yield partText;
+            }
+          } catch {
+            // ignore malformed partial chunk
+          }
+        }
+      }
+      // Flush remaining buffer
+      const final = buffer.trim();
+      if (final) {
+        try {
+          const parsed = JSON.parse(final);
+          const partText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (partText) yield partText;
+        } catch {/* ignore */}
+      }
+    } finally {
+      controller.abort();
     }
   }
 }
