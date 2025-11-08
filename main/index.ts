@@ -8,25 +8,6 @@ import { registerGlobalHotkeys } from './hotkey-manager';
 // Load environment variables
 dotenv.config();
 
-// Enable hot reload in development
-if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const electronReload = require('electron-reload');
-    // __dirname in compiled code is dist/main/main/, so go up to project root
-    const projectRoot = path.join(__dirname, '../../../');
-    // Watch the compiled main process files for changes
-    electronReload(path.join(projectRoot, 'dist', 'main'), {
-      electron: path.join(projectRoot, 'node_modules', '.bin', 'electron'),
-      hardResetMethod: 'exit',
-      ignore: ['**/node_modules/**', '**/renderer/**', '**/*.map'],
-    });
-    console.log('🔄 Hot reload enabled for main process');
-  } catch (error) {
-    console.warn('⚠️ Could not enable hot reload:', error);
-  }
-}
-
 let mainWindow: BrowserWindow | null = null;
 
 // Handle creating/recreating a window in the app when the dock icon is clicked (macOS)

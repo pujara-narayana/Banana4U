@@ -85,11 +85,25 @@ const App: React.FC = () => {
   useEffect(() => {
     if (transcript && transcript.trim() && !isListening) {
       // Voice input complete, send to AI
-      console.log('🎤 Sending voice transcript:', transcript);
+      console.log('📝 Sending transcript to AI:', transcript);
       handleSendMessage(transcript);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript, isListening]);
+
+  // Show voice errors
+  useEffect(() => {
+    if (voiceError) {
+      console.error('🎤 Voice error:', voiceError);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `🎤 ${voiceError}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  }, [voiceError]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
