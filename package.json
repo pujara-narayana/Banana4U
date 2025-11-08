@@ -31,7 +31,6 @@
     "framer-motion": "^10.16.0",
     "howler": "^2.2.4",
     "lucide-react": "^0.553.0",
-    "object-hash": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sharp": "^0.33.0"
@@ -55,6 +54,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.0",
+    "object-hash": "^3.0.0",
     "postcss": "^8.4.32",
     "postcss-loader": "^7.3.0",
     "style-loader": "^3.3.3",
