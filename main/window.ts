@@ -45,6 +45,10 @@ export function createMainWindow(): BrowserWindow {
       contextIsolation: true,
       sandbox: false, // Need false for some native modules
       devTools: true,
+      // Enable media access for microphone only
+      // @ts-ignore - These options exist but aren't in types
+      enableRemoteModule: false,
+      allowRunningInsecureContent: false,
     },
   });
 
