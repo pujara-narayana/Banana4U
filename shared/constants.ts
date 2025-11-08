@@ -3,12 +3,12 @@ export const APP_VERSION = "1.0.0";
 
 // Window Configuration
 export const WINDOW_CONFIG = {
-  DEFAULT_WIDTH: 300,
-  DEFAULT_HEIGHT: 400,
+  DEFAULT_WIDTH: 280,
+  DEFAULT_HEIGHT: 380,
   MIN_WIDTH: 200,
   MIN_HEIGHT: 200,
-  MAX_WIDTH: 600,
-  MAX_HEIGHT: 800,
+  MAX_WIDTH: 400,
+  MAX_HEIGHT: 600,
   DEFAULT_OPACITY: 0.95,
   IDLE_OPACITY: 0.7,
 };
@@ -52,7 +52,30 @@ export const IPC_CHANNELS = {
   HOTKEY_UNREGISTER: "hotkey:unregister",
 
   // System
-  GET_SYSTEM_INFO: "system:get-info",
+  GET_SYSTEM_INFO: 'system:get-info',
+
+  // Authentication
+  AUTH_REGISTER: 'auth:register',
+  AUTH_LOGIN: 'auth:login',
+  AUTH_LOGOUT: 'auth:logout',
+  AUTH_GET_CURRENT_USER: 'auth:get-current-user',
+  AUTH_CHECK_USERNAME: 'auth:check-username',
+  AUTH_CHECK_EMAIL: 'auth:check-email',
+
+  // User Profile
+  PROFILE_GET: 'profile:get',
+  PROFILE_UPDATE: 'profile:update',
+
+  // Conversations
+  CONVERSATION_CREATE: 'conversation:create',
+  CONVERSATION_GET: 'conversation:get',
+  CONVERSATION_LIST: 'conversation:list',
+  CONVERSATION_UPDATE: 'conversation:update',
+  CONVERSATION_DELETE: 'conversation:delete',
+
+  // Messages
+  MESSAGE_ADD: 'message:add',
+  MESSAGE_GET_ALL: 'message:get-all',
 };
 
 // Animation States
