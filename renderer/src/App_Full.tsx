@@ -138,7 +138,7 @@ const App: React.FC = () => {
         {/* Chat Bubble (above banana) */}
         {latestMessage && latestMessage.role === 'assistant' && (
           <div className="mb-4">
-            <ChatBubble message={latestMessage.content} />
+            <ChatBubble message={latestMessage} />
           </div>
         )}
 

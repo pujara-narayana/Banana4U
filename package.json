@@ -25,14 +25,15 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
     "axios": "^1.6.0",
+    "better-sqlite3": "^9.2.0",
     "dotenv": "^16.3.1",
     "electron-store": "^8.1.0",
     "framer-motion": "^10.16.0",
     "howler": "^2.2.4",
+    "lucide-react": "^0.553.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sharp": "^0.33.0",
-    "better-sqlite3": "^9.2.0"
+    "sharp": "^0.33.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
@@ -75,15 +76,24 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "build/icon.icns"
     },
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "build/icon.ico"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Utility",
       "icon": "build/icon.png"
     }
