@@ -1,13 +1,35 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimationState } from '../../../shared/types';
+import { AnimationState, PersonalityType } from '../../../shared/types';
 import bananaImage from '../../../images/coolbanana.png';
+import studyBananaImage from '../../../images/studybanana.png';
+import hypeBananaImage from '../../../images/hypebanana.png';
+import chillBananaImage from '../../../images/chillbanana.png';
+import memeBananaImage from '../../../images/memebanana-removebg-preview.png';
 
 interface BananaProps {
   state: AnimationState;
+  personality?: PersonalityType;
 }
 
-const Banana: React.FC<BananaProps> = ({ state }) => {
+const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
+  // Select image based on personality
+  const getBananaImage = () => {
+    switch (personality) {
+      case 'study':
+        return studyBananaImage;
+      case 'hype':
+        return hypeBananaImage;
+      case 'chill':
+        return chillBananaImage;
+      case 'meme':
+        return memeBananaImage;
+      default:
+        return bananaImage;
+    }
+  };
+
+  const currentImage = getBananaImage();
 
   // Motion variants for container
   const containerVariants = {
@@ -99,14 +121,25 @@ const Banana: React.FC<BananaProps> = ({ state }) => {
       animate={state}
       initial="idle"
     >
-      {/* Cool Banana Character */}
+      {/* Banana Character - changes based on personality */}
       <motion.img
-        src={bananaImage}
-        alt="Cool Banana Character"
+        src={currentImage}
+        alt={
+          personality === 'study' 
+            ? 'Study Banana Character' 
+            : personality === 'hype'
+            ? 'Hype Banana Character'
+            : personality === 'chill'
+            ? 'Chill Banana Character'
+            : personality === 'meme'
+            ? 'Meme Banana Character'
+            : 'Cool Banana Character'
+        }
         className="w-48 h-48 object-contain"
         style={{
           filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))',
         }}
+        key={personality} // Force re-render when personality changes
       />
 
       {/* Sleeping Z's */}

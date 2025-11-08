@@ -15,7 +15,7 @@ const SettingsButton: React.FC<SettingsButtonProps> = ({ onClick }) => {
       whileTap={{ scale: 0.95 }}
       title="Settings"
     >
-      <Settings size={20} color="white" />
+      <Settings size={14} color="white" />
     </motion.button>
   );
 };

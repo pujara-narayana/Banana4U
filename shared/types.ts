@@ -134,6 +134,26 @@ export interface WhisperResponse {
   text: string;
 }
 
+// Authentication Types
+export interface AuthUser {
+  id: string;
+  username: string;
+  email?: string;
+  created_at: Date;
+  last_login_at?: Date;
+}
+
+export interface RegisterParams {
+  username: string;
+  email?: string;
+  password: string;
+}
+
+export interface LoginParams {
+  username: string;
+  password: string;
+}
+
 // IPC Types
 export interface IPCResponse<T = unknown> {
   success: boolean;
@@ -172,6 +192,29 @@ export interface ElectronAPI {
     version: string;
     arch: string;
   }>;
+
+  // Authentication
+  register: (params: RegisterParams) => Promise<IPCResponse<AuthUser>>;
+  login: (params: LoginParams) => Promise<IPCResponse<AuthUser>>;
+  logout: () => Promise<IPCResponse<void>>;
+  getCurrentUser: () => Promise<IPCResponse<AuthUser>>;
+  checkUsername: (username: string) => Promise<IPCResponse<boolean>>;
+  checkEmail: (email: string) => Promise<IPCResponse<boolean>>;
+
+  // User Profile
+  getProfile: (userId: string) => Promise<IPCResponse<UserProfile>>;
+  updateProfile: (userId: string, updates: Partial<UserProfile>) => Promise<IPCResponse<void>>;
+
+  // Conversations
+  createConversation: (userId: string, personality?: string) => Promise<IPCResponse<string>>;
+  getConversation: (conversationId: string) => Promise<IPCResponse<ConversationHistory>>;
+  listConversations: (userId: string, limit?: number) => Promise<IPCResponse<ConversationHistory[]>>;
+  updateConversation: (conversationId: string, updates: { title?: string }) => Promise<IPCResponse<void>>;
+  deleteConversation: (conversationId: string) => Promise<IPCResponse<void>>;
+
+  // Messages
+  addMessage: (conversationId: string, message: Message) => Promise<IPCResponse<void>>;
+  getMessages: (conversationId: string) => Promise<IPCResponse<Message[]>>;
 }
 
 declare global {

@@ -3,7 +3,8 @@ import Banana from './components/Banana';
 import ChatBubble from './components/ChatBubble';
 import ChatInput from './components/ChatInput';
 import SettingsButton from './components/SettingsButton';
-import { AnimationState, Message } from '../../shared/types';
+import SettingsPanel from './components/SettingsPanel';
+import { AnimationState, Message, PersonalityType } from '../../shared/types';
 import { useBananaAI } from './hooks/useBananaAI';
 import { useVoiceInput } from './hooks/useVoiceInput';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
@@ -12,6 +13,8 @@ const App: React.FC = () => {
   const [animationState, setAnimationState] = useState<AnimationState>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentScreenContext, setCurrentScreenContext] = useState<any>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [personality, setPersonality] = useState<PersonalityType>('default');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Hooks
@@ -26,8 +29,8 @@ const App: React.FC = () => {
     transcript,
     startListening,
     stopListening,
-    error: voiceError,
     isSupported: voiceSupported,
+    error: voiceError,
     isConversationalMode,
     startConversationalMode,
     stopConversationalMode,
@@ -38,6 +41,34 @@ const App: React.FC = () => {
     setLastAIResponse,
   } = useVoiceInput();
   const { speak, isSpeaking, stop: stopSpeaking, mute: muteSpeaking, unmute: unmuteSpeaking } = useTextToSpeech();
+
+  // Load personality from settings
+  useEffect(() => {
+    const loadPersonality = async () => {
+      try {
+        const settings = await window.electron.getSettings();
+        setPersonality(settings.defaultPersonality || 'default');
+      } catch (error) {
+        console.error('Failed to load personality:', error);
+      }
+    };
+    loadPersonality();
+  }, []);
+
+  // Update personality when settings change (e.g., when settings panel closes)
+  useEffect(() => {
+    if (!isSettingsOpen) {
+      const loadPersonality = async () => {
+        try {
+          const settings = await window.electron.getSettings();
+          setPersonality(settings.defaultPersonality || 'default');
+        } catch (error) {
+          console.error('Failed to load personality:', error);
+        }
+      };
+      loadPersonality();
+    }
+  }, [isSettingsOpen]);
 
   // Set up speaking callbacks for conversational mode
   useEffect(() => {
@@ -149,9 +180,13 @@ const App: React.FC = () => {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      // Use smooth scrolling for better UX
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleVoiceInput = () => {
     if (isListening) {
@@ -161,6 +196,7 @@ const App: React.FC = () => {
         alert('Voice input is not supported in this browser. Please use a Chromium-based browser.');
         return;
       }
+      // Clear any previous errors before starting
       startListening();
     }
   };
@@ -196,63 +232,72 @@ const App: React.FC = () => {
   };
 
   const handleSettings = () => {
-    // Settings functionality to be implemented
-    alert('Settings menu coming soon! 🍌');
+    setIsSettingsOpen(true);
   };
 
   return (
-    <div className="w-full h-full relative ios-glass-background">
+    <div className="w-full h-full relative overflow-hidden ios-glass-background">
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/10 via-banana-500/8 to-amber-200/10 animate-gradient" />
       <div className="absolute inset-0 backdrop-blur-2xl" />
 
-      {/* Settings Button - Upper Left */}
-      <SettingsButton onClick={handleSettings} />
+      {/* Settings Panel */}
+      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
-      {/* Main Content */}
-      <div className="relative w-full h-full flex flex-col z-10">
-        {/* Banana at top center */}
-        <div className="flex-shrink-0 pt-8 pb-4 flex justify-center">
-          <Banana state={animationState} />
-        </div>
+      {/* Main Content - Hide when settings are open */}
+      {!isSettingsOpen && (
+        <>
+          {/* Settings Button - Upper Left */}
+          <SettingsButton onClick={handleSettings} />
 
-        {/* Chat Messages Area */}
-        <div
-          ref={chatContainerRef}
-          className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth no-drag"
-          style={{ scrollbarWidth: 'thin' }}
-        >
-          <div className="max-w-2xl mx-auto space-y-3">
-            {messages.map((message) => (
-              <ChatBubble key={message.id} message={message} />
-            ))}
-            {isLoading && (
-              <div className="flex justify-end mb-2">
-                <div className="glass-bubble px-4 py-2 rounded-2xl rounded-br-sm">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
+          <div className="relative w-full h-full flex flex-col z-10">
+            {/* Banana at top center */}
+            <div className="flex-shrink-0 pt-8 pb-4 flex justify-center">
+              <Banana state={animationState} personality={personality} />
+            </div>
+
+            {/* Chat Messages Area */}
+            <div
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {voiceError && (
+                <div className="text-red-500 text-xs text-center mb-2 px-2">
+                  {voiceError}
                 </div>
+              )}
+              <div className="max-w-2xl mx-auto space-y-3">
+                {messages.map((message) => (
+                  <ChatBubble key={message.id} message={message} />
+                ))}
+                {isLoading && (
+                  <div className="flex justify-end mb-2">
+                    <div className="glass-bubble px-4 py-2 rounded-2xl rounded-br-sm">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Chat Input at bottom */}
-      </div>
-      {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
-      {/* The wrapper ignores pointer events, but the child re-enables them */}
-      <div className="absolute bottom-4 left-0 right-0 px-4 z-20 pointer-events-none">
-        <ChatInput
-          onSendMessage={handleSendMessage}
-          onVoiceInput={handleVoiceInput}
-          onConversationalMode={handleConversationalMode}
-          isListening={isListening}
-          isConversationalMode={isConversationalMode}
-        />
-      </div>
+            {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
+            <div className="absolute bottom-4 left-0 right-0 px-4 z-20 pointer-events-none">
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                onVoiceInput={handleVoiceInput}
+                onConversationalMode={handleConversationalMode}
+                isListening={isListening}
+                isConversationalMode={isConversationalMode}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
