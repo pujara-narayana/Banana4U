@@ -104,7 +104,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                       <option value="study">Study</option>
                       <option value="hype">Hype</option>
                       <option value="chill">Chill</option>
-                      <option value="code">Code</option>
                       <option value="meme">Meme</option>
                     </select>
                   </div>
