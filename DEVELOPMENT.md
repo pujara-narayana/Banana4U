@@ -3,45 +3,55 @@
 ## 🍌 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - Google Gemini API key (get from https://makersuite.google.com/app/apikey)
 
 ### Installation
 
 1. **Install dependencies:**
+
 ```bash
 npm install
 ```
 
 2. **Set up environment variables:** (Never commit your real keys. The key you pasted in chat is now exposed – rotate it immediately in the Google Gemini console.)
+
 ```bash
 cp .env.example .env
 ```
 
 Then edit `.env` and add your Gemini API key:
+
 ```env
 GEMINI_API_KEY=your_actual_api_key_here
 ```
+
 Security Notes:
+
 - Treat API keys like passwords. If a key appears in screenshots, logs, or chat history, rotate it.
 - The build injects `process.env.GEMINI_API_KEY` at compile time for the renderer via webpack DefinePlugin.
 - For runtime user changes (e.g., settings UI), the explicit key provided there overrides the injected one.
 
 Streaming (optional / experimental):
+
 - A streaming endpoint constant `GEMINI_STREAM` is available. The `GeminiClient.streamResponse()` async generator yields partial text chunks if you integrate it in the UI.
 
 3. **Run in development mode:**
+
 ```bash
 npm run dev
 ```
 
 This will:
+
 - Start the webpack dev server on http://localhost:3000
 - Launch the Electron app with hot reload
 
 ## 🎯 Features Implemented (MVP)
 
 ### ✅ Core Features
+
 - **Floating Window**: Always-on-top, draggable, transparent window
 - **Animated Banana Avatar**: Multiple animation states (idle, listening, thinking, speaking, happy, etc.)
 - **Voice Input**: Web Speech API integration for voice commands (push-to-talk)
@@ -52,12 +62,14 @@ This will:
 - **Window Controls**: Minimize, close, pin/unpin window
 
 ### 🎨 UI Components
+
 - `Banana.tsx` - Animated banana avatar with Framer Motion
 - `ChatBubble.tsx` - Message display with fade-in animations
 - `ActionBar.tsx` - Voice, text, screen capture, and quick actions buttons
 - `ControlBar.tsx` - Window management controls
 
 ### 🔧 Services & Hooks
+
 - `gemini-client.ts` - Google Gemini API integration
 - `useBananaAI.ts` - Hook for AI conversation management
 - `useVoiceInput.ts` - Web Speech API for speech-to-text
@@ -123,17 +135,20 @@ banana4u/
 ### Basic Interaction
 
 1. **Voice Input** (🎤):
+
    - Click the microphone button or press `Ctrl/Cmd + Space`
    - Speak your question
    - Release to stop recording
    - Banana will respond with voice and text
 
 2. **Text Input** (⌨️):
+
    - Click the keyboard button
    - Type your question in the prompt
    - Banana will respond
 
 3. **Screen Capture** (📷):
+
    - Click the camera button or press `Ctrl/Cmd + Shift + C`
    - Banana captures your screen and analyzes it
    - Automatically asks "What do you see on my screen?"
@@ -146,6 +161,7 @@ banana4u/
 ### Animation States
 
 Banana automatically changes animations based on what it's doing:
+
 - **Idle**: Gentle swaying and breathing
 - **Listening**: Pulsing glow when recording voice
 - **Thinking**: Pondering motion while AI processes
@@ -156,6 +172,7 @@ Banana automatically changes animations based on what it's doing:
 ## 🔑 API Keys
 
 ### Gemini API (Required)
+
 1. Go to https://makersuite.google.com/app/apikey
 2. Click "Create API Key"
 3. Copy the key and add to `.env`:
@@ -164,12 +181,14 @@ Banana automatically changes animations based on what it's doing:
    ```
 
 ### Optional APIs (Future Enhancement)
+
 - **OpenAI Whisper** (better voice recognition): https://platform.openai.com/api-keys
 - **ElevenLabs** (natural TTS): https://elevenlabs.io/
 
 ## 🐛 Troubleshooting
 
 ### Voice Input Not Working
+
 - **Issue**: Microphone permissions not granted
 - **Solution**:
   - macOS: System Settings → Privacy & Security → Microphone → Allow
@@ -177,29 +196,35 @@ Banana automatically changes animations based on what it's doing:
   - Browser must support Web Speech API (Chrome/Edge recommended)
 
 ### Screen Capture Fails
+
 - **Issue**: Screen recording permissions not granted
 - **Solution**:
   - macOS: System Settings → Privacy & Security → Screen Recording → Allow Electron
   - May need to restart app after granting permission
 
 ### Gemini API Errors
+
 - **"Invalid API key"**: Check that your API key is correct in `.env`
 - **"Rate limit exceeded"**: Wait a minute and try again (free tier limits)
 - **No response**: Check internet connection
 
 ### App Won't Start
+
 1. Clear dist folder: `rm -rf dist`
 2. Rebuild: `npm run build:main`
 3. Restart: `npm run dev`
 
 ### Window Not Visible
+
 - Check if window is off-screen (can happen with multiple monitors)
 - Delete stored position: Delete `~/.config/electron/banana4u` (Linux/Mac) or `%APPDATA%\banana4u` (Windows)
 
 ## 🎨 Customization
 
 ### Change Banana Colors
+
 Edit `tailwind.config.js`:
+
 ```javascript
 colors: {
   banana: {
@@ -210,7 +235,9 @@ colors: {
 ```
 
 ### Adjust Window Size
+
 Edit `shared/constants.ts`:
+
 ```typescript
 export const WINDOW_CONFIG = {
   DEFAULT_WIDTH: 300,
@@ -220,7 +247,9 @@ export const WINDOW_CONFIG = {
 ```
 
 ### Modify Animations
+
 Edit `renderer/src/components/Banana.tsx` - adjust Framer Motion variants:
+
 ```typescript
 idle: {
   rotate: [0, -2, 2, -2, 0],
@@ -234,23 +263,27 @@ idle: {
 From the PRD, here's what to add next:
 
 1. **Personality System**:
+
    - Create personality selector UI
    - Implement Study, Hype, Chill, Code, and Meme bananas
    - Different system prompts and animations for each
 
 2. **Gamification**:
+
    - Implement Potassium Points system
    - Track user actions and award points
    - Level progression (Green → Yellow → Spotted → Golden)
    - Achievements system
 
 3. **Enhanced Animations**:
+
    - Lip-sync with speech (phoneme detection)
    - Particle effects (confetti, sparkles)
    - More expressive emotions
    - Sleeping mode with Z's
 
 4. **Quick Actions Menu**:
+
    - Explain This
    - Summarize
    - Find Errors
@@ -265,6 +298,7 @@ From the PRD, here's what to add next:
 ## 🤝 Contributing
 
 This is a hackathon project! Feel free to:
+
 - Add new personalities
 - Create custom banana skins
 - Improve animations
