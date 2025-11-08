@@ -44,9 +44,9 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
   });
 
   // Screen capture
-  ipcMain.handle(IPC_CHANNELS.CAPTURE_SCREEN, async (_event, mode: 'full' | 'active' | 'region') => {
+  ipcMain.handle(IPC_CHANNELS.CAPTURE_SCREEN, async (_event, mode: 'full' | 'active' | 'region', excludeBanana4U = false) => {
     try {
-      const screenshot = await captureScreen(mode);
+      const screenshot = await captureScreen(mode, excludeBanana4U);
       return { success: true, data: screenshot };
     } catch (error) {
       console.error('Screen capture failed:', error);

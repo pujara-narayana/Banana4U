@@ -18,7 +18,12 @@ const App: React.FC = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Hooks
-  const { sendMessage, isLoading, error: aiError } = useBananaAI();
+  const { 
+    sendMessage, 
+    sendMessageWithAutoScreenshot, 
+    isLoading, 
+    error: aiError 
+  } = useBananaAI();
   const {
     isListening,
     transcript,
@@ -77,19 +82,22 @@ const App: React.FC = () => {
       // Add user message
       const userMessage: Message = {
         id: Date.now().toString(),
-        role: 'user',
+        role: "user",
         content: messageText,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      // Get AI response
-      const response = await sendMessage(messageText, currentScreenContext);
+      // Use auto-screenshot feature if no manual screen context was provided
+      // This will automatically capture screen if Gemini detects phrases like "explain this"
+      const response = currentScreenContext 
+        ? await sendMessage(messageText, currentScreenContext)
+        : await sendMessageWithAutoScreenshot(messageText);
 
       // Add assistant message
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: response,
         timestamp: new Date(),
       };
@@ -101,11 +109,11 @@ const App: React.FC = () => {
       // Clear screen context after use
       setCurrentScreenContext(null);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error("Failed to send message:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again! 🍌',
+        role: "assistant",
+        content: "Sorry, I encountered an error. Please try again! 🍌",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -165,7 +173,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden ios-glass-background">
+    <div className="w-full h-full relative ios-glass-background">
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/10 via-banana-500/8 to-amber-200/10 animate-gradient" />
       <div className="absolute inset-0 backdrop-blur-2xl" />

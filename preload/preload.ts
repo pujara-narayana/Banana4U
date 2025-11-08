@@ -24,8 +24,8 @@ const electronAPI: ElectronAPI = {
   },
 
   // Screen capture
-  captureScreen: async (mode: 'full' | 'active' | 'region') => {
-    const result = await ipcRenderer.invoke(IPC_CHANNELS.CAPTURE_SCREEN, mode);
+  captureScreen: async (mode: 'full' | 'active' | 'region', excludeBanana4U = false) => {
+    const result = await ipcRenderer.invoke(IPC_CHANNELS.CAPTURE_SCREEN, mode, excludeBanana4U);
     if (result.success) {
       return result.data as ScreenContext;
     }

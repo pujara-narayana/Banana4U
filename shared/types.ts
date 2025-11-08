@@ -170,7 +170,7 @@ export interface ElectronAPI {
   setOpacity: (opacity: number) => void;
 
   // Screen capture
-  captureScreen: (mode: 'full' | 'active' | 'region') => Promise<ScreenContext>;
+  captureScreen: (mode: 'full' | 'active' | 'region', excludeBanana4U?: boolean) => Promise<ScreenContext>;
 
   // Audio
   startAudioRecording: () => Promise<void>;
