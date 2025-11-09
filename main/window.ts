@@ -23,6 +23,11 @@ export function createMainWindow(): BrowserWindow {
     y = Math.floor((screenHeight - WINDOW_CONFIG.DEFAULT_HEIGHT) / 2);
   }
 
+  // Get the icon path - works for both dev and production
+  const iconPath = process.env.NODE_ENV === 'development'
+    ? path.join(__dirname, '../../build/icon.png')
+    : path.join(__dirname, '../../build/icon.png');
+
   const mainWindow = new BrowserWindow({
     width: WINDOW_CONFIG.DEFAULT_WIDTH,
     height: WINDOW_CONFIG.DEFAULT_HEIGHT,
@@ -39,6 +44,7 @@ export function createMainWindow(): BrowserWindow {
     skipTaskbar: false,
     hasShadow: true,
     backgroundColor: '#00000000', // Fully transparent
+    icon: iconPath, // App icon
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
       nodeIntegration: false,
