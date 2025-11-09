@@ -1,4 +1,10 @@
-import { app, BrowserWindow, session, systemPreferences } from "electron";
+import {
+  app,
+  BrowserWindow,
+  session,
+  systemPreferences,
+  ipcMain,
+} from "electron";
 import * as path from "path";
 import * as dotenv from "dotenv";
 import { createMainWindow } from "./window";
@@ -66,7 +72,7 @@ app.whenReady().then(() => {
         console.log("ℹ️ Permission:", permission);
         callback(false);
       }
-    }
+    },
   );
 
   // Handle media device selection - filter out system audio devices

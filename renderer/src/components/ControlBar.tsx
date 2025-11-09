@@ -1,59 +1,55 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
 
 const ControlBar: React.FC = () => {
-  const [alwaysOnTop, setAlwaysOnTop] = useState(true);
-
   const handleMinimize = () => {
     window.electron.minimizeWindow();
   };
 
-  const handleClose = () => {
+  const handleExit = () => {
     window.electron.closeWindow();
   };
 
-  const handleToggleAlwaysOnTop = async () => {
-    const newState = await window.electron.toggleAlwaysOnTop();
-    setAlwaysOnTop(newState);
-  };
-
   return (
-    <div className="w-full flex justify-between items-center no-drag">
-      {/* Left side - Pin button */}
-      <motion.button
-        className={`control-button ${
-          alwaysOnTop ? 'bg-banana-500' : 'bg-gray-500'
-        }`}
-        onClick={handleToggleAlwaysOnTop}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        title={alwaysOnTop ? 'Unpin window' : 'Pin window on top'}
+    <div className="no-drag absolute right-2 top-2 z-30 flex gap-2">
+      {/* Minimize Button */}
+      <button
+        onClick={handleMinimize}
+        className="h-6 w-6 rounded-full bg-black/20 text-white/80 transition-colors hover:bg-white/20"
+        title="Minimize"
       >
-        📌
-      </motion.button>
-
-      {/* Right side - Window controls */}
-      <div className="flex gap-2">
-        <motion.button
-          className="control-button bg-yellow-500 hover:bg-yellow-600"
-          onClick={handleMinimize}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          title="Minimize"
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2.5}
+          stroke="currentColor"
+          className="m-auto h-3 w-3"
         >
-          <span className="text-xs">─</span>
-        </motion.button>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
+        </svg>
+      </button>
 
-        <motion.button
-          className="control-button bg-red-500 hover:bg-red-600"
-          onClick={handleClose}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          title="Close"
+      {/* Exit Button */}
+      <button
+        onClick={handleExit}
+        className="h-6 w-6 rounded-full bg-black/20 text-white/80 transition-colors hover:bg-red-500/80"
+        title="Exit"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2.5}
+          stroke="currentColor"
+          className="m-auto h-3 w-3"
         >
-          <span className="text-xs">✕</span>
-        </motion.button>
-      </div>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
     </div>
   );
 };

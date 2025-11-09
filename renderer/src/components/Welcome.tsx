@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import Banana from "./Banana";
+import ControlBar from "./ControlBar";
 
 interface WelcomeProps {
   onContinue: () => void;
@@ -26,6 +27,9 @@ const Welcome: React.FC<WelcomeProps> = ({ onContinue }) => {
       {/* Animated gradient background */}
       <div className="via-banana-500/8 animate-gradient pointer-events-none absolute inset-0 bg-gradient-to-br from-yellow-200/10 to-amber-200/10" />
       <div className="pointer-events-none absolute inset-0 backdrop-blur-2xl" />
+
+      {/* Window Controls */}
+      <ControlBar />
 
       <div
         ref={scrollRef}

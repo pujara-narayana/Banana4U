@@ -10,6 +10,7 @@ import { useVoiceInput } from "./hooks/useVoiceInput";
 import { useTextToSpeech } from "./hooks/useTextToSpeech";
 import Welcome from "./components/Welcome";
 import ChatView from "./components/ChatView";
+import ControlBar from "./components/ControlBar";
 
 const App: React.FC = () => {
   const [animationState, setAnimationState] = useState<AnimationState>("idle");
@@ -329,6 +330,9 @@ const App: React.FC = () => {
       {/* Animated gradient background */}
       <div className="via-banana-500/8 animate-gradient absolute inset-0 bg-gradient-to-br from-yellow-200/10 to-amber-200/10" />
       <div className="absolute inset-0 backdrop-blur-2xl" />
+
+      {/* Window Controls */}
+      <ControlBar />
 
       {/* Settings Panel */}
       <SettingsPanel
