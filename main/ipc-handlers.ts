@@ -83,11 +83,13 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
   // Text to Speech - ElevenLabs
   ipcMain.handle(IPC_CHANNELS.TTS_GENERATE, async (_event, text: string) => {
     try {
-      const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+      // Get API key from settings first, fall back to env
+      const settings = store.get("settings") as any;
+      const ELEVENLABS_API_KEY = settings?.elevenLabsApiKey || process.env.ELEVENLABS_API_KEY;
       const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "mdzEgLpu0FjTwYs5oot0"; // Rachel - free voice
 
       if (!ELEVENLABS_API_KEY) {
-        throw new Error("ELEVENLABS_API_KEY is not set in environment variables");
+        throw new Error("ElevenLabs API key is not set. Please add it in Settings > API Keys or set ELEVENLABS_API_KEY in environment variables");
       }
 
       console.log("🗣️ [Main Process] Generating speech with ElevenLabs...");
@@ -150,11 +152,13 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
     IPC_CHANNELS.TTS_GENERATE_FILE,
     async (_event, text: string) => {
       try {
-        const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+        // Get API key from settings first, fall back to env
+        const settings = store.get("settings") as any;
+        const ELEVENLABS_API_KEY = settings?.elevenLabsApiKey || process.env.ELEVENLABS_API_KEY;
         const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "mdzEgLpu0FjTwYs5oot0"; // Rachel - free voice
 
         if (!ELEVENLABS_API_KEY) {
-          throw new Error("ELEVENLABS_API_KEY is not set in environment variables");
+          throw new Error("ElevenLabs API key is not set. Please add it in Settings > API Keys or set ELEVENLABS_API_KEY in environment variables");
         }
 
         console.log(
