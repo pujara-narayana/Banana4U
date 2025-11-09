@@ -8,6 +8,7 @@ interface ChatBubbleProps {
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
   const isUser = message.role === 'user';
+  const hasMeme = message.meme && message.meme.imageUrl;
 
   return (
     <motion.div
@@ -18,7 +19,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
       <div
-        className={`max-w-xs px-4 py-3 rounded-2xl glass-bubble shadow-lg ${
+        className={`${hasMeme ? 'max-w-md' : 'max-w-xs'} px-4 py-3 rounded-2xl glass-bubble shadow-lg ${
           isUser
             ? 'bg-white/30 text-gray-900 rounded-bl-sm border border-white/40'
             : 'bg-gray-900/40 text-white rounded-br-sm border border-white/20'
@@ -30,6 +31,28 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
             : { borderBottomRightRadius: '4px' }),
         }}
       >
+        {/* Meme Image (if present) */}
+        {hasMeme && (
+          <motion.div
+            className="mb-3 rounded-lg overflow-hidden border-2 border-white/20 shadow-xl"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+          >
+            <img
+              src={message.meme!.imageUrl}
+              alt="Generated meme"
+              className="w-full h-auto object-cover"
+              onError={(e) => {
+                // Fallback if image fails to load
+                (e.target as HTMLImageElement).style.display = 'none';
+                console.error('Failed to load meme image:', message.meme!.imageUrl);
+              }}
+            />
+          </motion.div>
+        )}
+
+        {/* Text Content */}
         <p className="text-sm leading-relaxed break-words font-medium">{message.content}</p>
       </div>
     </motion.div>

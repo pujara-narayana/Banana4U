@@ -62,19 +62,20 @@ const App: React.FC = () => {
       setMessages((prev) => [...prev, userMessage]);
 
       // Get AI response
-      const response = await sendMessage(messageText, currentScreenContext);
+      const aiResponse = await sendMessage(messageText, currentScreenContext);
 
-      // Add assistant message
+      // Add assistant message with potential meme data
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response,
+        content: aiResponse.text,
         timestamp: new Date(),
+        meme: aiResponse.memeData,
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Speak the response
-      speak(response);
+      speak(aiResponse.text);
 
       // Clear screen context after use
       setCurrentScreenContext(null);

@@ -5,29 +5,51 @@ import {
   PersonalityType,
   ScreenContext,
 } from "../../../shared/types";
+import MemeGenerator from "./meme-generator";
 
 export interface ConversationMessage {
   role: "user" | "assistant";
   content: string;
 }
 
+export interface GenerateResponseResult {
+  text: string;
+  memeData?: {
+    imageUrl: string;
+    caption: string;
+    topText?: string;
+    bottomText?: string;
+  };
+}
+
 class GeminiClient {
   private apiKey: string;
+  private memeGenerator: MemeGenerator;
 
   constructor(apiKey?: string) {
     // Prefer explicit provided key (e.g., from settings store); fall back to env-injected key.
     this.apiKey = apiKey || (process.env.GEMINI_API_KEY as string) || "";
+    this.memeGenerator = new MemeGenerator(this.apiKey);
   }
 
   /**
    * Generate a response from Gemini API
+   * For 'meme' personality, this will generate a meme instead of just text
    */
   async generateResponse(
     userQuery: string,
     screenContext?: ScreenContext,
     conversationHistory: ConversationMessage[] = [],
     personality: PersonalityType = "default"
-  ): Promise<string> {
+  ): Promise<string | GenerateResponseResult> {
+    console.log('🎨 generateResponse called with personality:', personality);
+
+    // Special handling for meme personality
+    if (personality === "meme") {
+      console.log('🎭 Meme personality detected! Triggering meme generation...');
+      return await this.generateMemeResponse(userQuery, screenContext, conversationHistory);
+    }
+
     const systemPrompt = this.getSystemPrompt(personality);
 
     // Build the parts array for the request
@@ -139,6 +161,46 @@ class GeminiClient {
         }
       }
       throw error;
+    }
+  }
+
+  /**
+   * Generate a meme response for the meme personality
+   */
+  private async generateMemeResponse(
+    userQuery: string,
+    screenContext?: ScreenContext,
+    conversationHistory: ConversationMessage[] = []
+  ): Promise<GenerateResponseResult> {
+    try {
+      console.log("🎭 Generating meme for query:", userQuery);
+
+      // Generate the meme using the meme generator service
+      const memeData = await this.memeGenerator.generateMeme(
+        userQuery,
+        screenContext?.text
+      );
+
+      console.log("✅ Meme generated successfully:", memeData);
+
+      // Return both the meme caption as text and the meme data
+      return {
+        text: memeData.caption,
+        memeData: {
+          imageUrl: memeData.imageUrl,
+          caption: memeData.caption,
+          topText: memeData.topText,
+          bottomText: memeData.bottomText,
+        },
+      };
+    } catch (error) {
+      console.error("❌ Meme generation failed:", error);
+      // Fallback to regular text response with humor
+      const fallbackResponse = this.getSystemPrompt("meme");
+      return {
+        text: "Oops! This banana split trying to make a meme! Let me just say something funny instead: Why did the banana go to the doctor? Because it wasn't peeling well! 🍌😄",
+        memeData: undefined,
+      };
     }
   }
 

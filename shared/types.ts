@@ -18,6 +18,12 @@ export interface Message {
   content: string;
   timestamp: Date;
   screenContext?: ScreenContext;
+  meme?: {
+    imageUrl: string;
+    caption: string;
+    topText?: string;
+    bottomText?: string;
+  };
 }
 
 export interface ScreenContext {

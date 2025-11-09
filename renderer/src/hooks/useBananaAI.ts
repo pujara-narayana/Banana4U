@@ -1,13 +1,23 @@
 import { useState, useCallback, useEffect } from "react";
-import GeminiClient, { ConversationMessage } from "../services/gemini-client";
+import GeminiClient, { ConversationMessage, GenerateResponseResult } from "../services/gemini-client";
 import { PersonalityType, ScreenContext } from "../../../shared/types";
+
+export interface AIResponse {
+  text: string;
+  memeData?: {
+    imageUrl: string;
+    caption: string;
+    topText?: string;
+    bottomText?: string;
+  };
+}
 
 interface UseBananaAIResult {
   sendMessage: (
     message: string,
     screenContext?: ScreenContext
-  ) => Promise<string>;
-  sendMessageWithAutoScreenshot: (message: string) => Promise<string>;
+  ) => Promise<AIResponse>;
+  sendMessageWithAutoScreenshot: (message: string) => Promise<AIResponse>;
   isLoading: boolean;
   error: string | null;
   conversationHistory: ConversationMessage[];
@@ -24,6 +34,11 @@ export const useBananaAI = (): UseBananaAIResult => {
     ConversationMessage[]
   >([]);
   const [personality, setPersonality] = useState<PersonalityType>("default");
+
+  // Debug: Log when personality changes
+  useEffect(() => {
+    console.log('🎭 useBananaAI personality changed to:', personality);
+  }, [personality]);
 
   // Initialize Gemini client
   useEffect(() => {
@@ -53,7 +68,7 @@ export const useBananaAI = (): UseBananaAIResult => {
   }, []);
 
   const sendMessage = useCallback(
-    async (message: string, screenContext?: ScreenContext): Promise<string> => {
+    async (message: string, screenContext?: ScreenContext): Promise<AIResponse> => {
       if (!geminiClient) {
         const errorMsg = "Gemini client not initialized";
         setError(errorMsg);
@@ -72,7 +87,7 @@ export const useBananaAI = (): UseBananaAIResult => {
 
         const newHistory = [...conversationHistory, userMessage];
 
-        // Get response from Gemini
+        // Get response from Gemini (can be string or GenerateResponseResult)
         const response = await geminiClient.generateResponse(
           message,
           screenContext,
@@ -80,16 +95,27 @@ export const useBananaAI = (): UseBananaAIResult => {
           personality
         );
 
-        // Add assistant response to history
+        // Handle both string responses and meme responses
+        let aiResponse: AIResponse;
+        if (typeof response === 'string') {
+          aiResponse = { text: response };
+        } else {
+          aiResponse = {
+            text: response.text,
+            memeData: response.memeData,
+          };
+        }
+
+        // Add assistant response to history (only text for conversation history)
         const assistantMessage: ConversationMessage = {
           role: "assistant",
-          content: response,
+          content: aiResponse.text,
         };
 
         setConversationHistory([...newHistory, assistantMessage]);
         setIsLoading(false);
 
-        return response;
+        return aiResponse;
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to get response";
@@ -102,7 +128,7 @@ export const useBananaAI = (): UseBananaAIResult => {
   );
 
   const sendMessageWithAutoScreenshot = useCallback(
-    async (message: string): Promise<string> => {
+    async (message: string): Promise<AIResponse> => {
       if (!geminiClient) {
         const errorMsg = "Gemini client not initialized";
         setError(errorMsg);
@@ -122,7 +148,7 @@ export const useBananaAI = (): UseBananaAIResult => {
 
         if (needsScreenshot) {
           console.log("📸 Screenshot needed! Capturing screen...");
-          
+
           // Capture the screen automatically, excluding Banana4U window
           try {
             screenContext = await window.electron.captureScreen("full", true);

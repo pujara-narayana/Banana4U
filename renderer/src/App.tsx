@@ -14,7 +14,6 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentScreenContext, setCurrentScreenContext] = useState<any>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [personality, setPersonality] = useState<PersonalityType>('default');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Hooks
@@ -22,7 +21,9 @@ const App: React.FC = () => {
     sendMessage,
     sendMessageWithAutoScreenshot,
     isLoading,
-    error: aiError
+    error: aiError,
+    personality,
+    setPersonality
   } = useBananaAI();
   const {
     isListening,
@@ -47,13 +48,15 @@ const App: React.FC = () => {
     const loadPersonality = async () => {
       try {
         const settings = await window.electron.getSettings();
-        setPersonality(settings.defaultPersonality || 'default');
+        const newPersonality = settings.defaultPersonality || 'default';
+        console.log('🎭 Loading personality from settings:', newPersonality);
+        setPersonality(newPersonality);
       } catch (error) {
         console.error('Failed to load personality:', error);
       }
     };
     loadPersonality();
-  }, []);
+  }, [setPersonality]);
 
   // Update personality when settings change (e.g., when settings panel closes)
   useEffect(() => {
@@ -61,14 +64,16 @@ const App: React.FC = () => {
       const loadPersonality = async () => {
         try {
           const settings = await window.electron.getSettings();
-          setPersonality(settings.defaultPersonality || 'default');
+          const newPersonality = settings.defaultPersonality || 'default';
+          console.log('🎭 Updating personality from settings:', newPersonality);
+          setPersonality(newPersonality);
         } catch (error) {
           console.error('Failed to load personality:', error);
         }
       };
       loadPersonality();
     }
-  }, [isSettingsOpen]);
+  }, [isSettingsOpen, setPersonality]);
 
   // Set up speaking callbacks for conversational mode
   useEffect(() => {
@@ -106,24 +111,25 @@ const App: React.FC = () => {
 
       // Use auto-screenshot feature if no manual screen context was provided
       // This will automatically capture screen if Gemini detects phrases like "explain this"
-      const response = currentScreenContext
+      const aiResponse = currentScreenContext
           ? await sendMessage(messageText, currentScreenContext)
           : await sendMessageWithAutoScreenshot(messageText);
 
-      // Add assistant message
+      // Add assistant message with potential meme data
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: response,
+        content: aiResponse.text,
         timestamp: new Date(),
+        meme: aiResponse.memeData,
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Store AI response for voice filtering
-      setLastAIResponse(response);
+      setLastAIResponse(aiResponse.text);
 
       // Speak the response
-      speak(response);
+      speak(aiResponse.text);
 
       // Clear screen context after use
       setCurrentScreenContext(null);
