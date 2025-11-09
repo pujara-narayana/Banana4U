@@ -5,9 +5,15 @@ const registeredHotkeys: Map<string, () => void> = new Map();
 export function registerGlobalHotkeys(mainWindow: BrowserWindow): void {
   // Register default hotkeys
 
-  // Push-to-talk (Ctrl/Cmd + Space)
+  // Focus input field (Ctrl/Cmd + Space)
   registerHotkey('CommandOrControl+Space', () => {
-    mainWindow.webContents.send('hotkey:push-to-talk');
+    console.log('Focus hotkey pressed');
+    // Bring the window to the front and focus it
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.focus();
+    mainWindow.webContents.send('hotkey:focus-input');
   });
 
   // Quick capture screen (Ctrl/Cmd + Shift + C)
