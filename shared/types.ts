@@ -186,6 +186,13 @@ export interface ElectronAPI {
   registerHotkey: (key: string, callback: () => void) => Promise<boolean>;
   unregisterHotkey: (key: string) => Promise<void>;
 
+  /**
+   * Listens for a global hotkey event to focus the main input field.
+   * @param callback The function to execute when the event is received.
+   * @returns A function to remove the event listener.
+   */
+  onFocusInput: (callback: () => void) => () => void;
+
   // System
   getSystemInfo: () => Promise<{
     platform: string;
