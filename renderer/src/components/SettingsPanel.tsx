@@ -107,20 +107,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                       <option value="meme">Meme</option>
                     </select>
                   </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-300 mb-2">Proactive Level</label>
-                    <select
-                      value={settings.proactiveLevel}
-                      onChange={(e) => updateSetting('proactiveLevel', e.target.value as any)}
-                      className="w-full bg-gray-800 text-white px-3 py-2 rounded-lg text-sm border border-gray-700 focus:outline-none focus:border-yellow-400"
-                    >
-                      <option value="off">Off</option>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                    </select>
-                  </div>
                 </div>
               )}
 
