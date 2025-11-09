@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Banana from './components/Banana';
 import ChatBubble from './components/ChatBubble';
 import ChatInput from './components/ChatInput';
@@ -16,14 +16,13 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [personality, setPersonality] = useState<PersonalityType>('default');
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Hooks
-  const { 
-    sendMessage, 
-    sendMessageWithAutoScreenshot, 
-    isLoading, 
-    error: aiError 
+  const {
+    sendMessage,
+    sendMessageWithAutoScreenshot,
+    isLoading,
+    error: aiError
   } = useBananaAI();
   const {
     isListening,
@@ -79,17 +78,6 @@ const App: React.FC = () => {
     setUnmuteSpeakingCallback(() => unmuteSpeaking);
   }, [isSpeaking, setSpeakingCallback, stopSpeaking, setStopSpeakingCallback, muteSpeaking, setMuteSpeakingCallback, unmuteSpeaking, setUnmuteSpeakingCallback]);
 
-  // Listen for global hotkey to focus input
-  useEffect(() => {
-    const removeListener = window.electron.onFocusInput(() => {
-      console.log('Focus event received from main process.');
-      inputRef.current?.focus();
-    });
-
-    // Cleanup the listener when the component unmounts
-    return () => removeListener();
-  }, []);
-
   // Update animation state based on various states
   useEffect(() => {
     if (isListening) {
@@ -103,7 +91,7 @@ const App: React.FC = () => {
     }
   }, [isListening, isLoading, isSpeaking]);
 
-  const handleSendMessage = useCallback(async (messageText: string) => {
+  const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
 
     try {
@@ -118,9 +106,9 @@ const App: React.FC = () => {
 
       // Use auto-screenshot feature if no manual screen context was provided
       // This will automatically capture screen if Gemini detects phrases like "explain this"
-      const response = currentScreenContext 
-        ? await sendMessage(messageText, currentScreenContext)
-        : await sendMessageWithAutoScreenshot(messageText);
+      const response = currentScreenContext
+          ? await sendMessage(messageText, currentScreenContext)
+          : await sendMessageWithAutoScreenshot(messageText);
 
       // Add assistant message
       const assistantMessage: Message = {
@@ -149,7 +137,7 @@ const App: React.FC = () => {
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
-  }, [currentScreenContext, sendMessage, sendMessageWithAutoScreenshot, setLastAIResponse, speak]);
+  };
 
   // Handle voice transcript
   useEffect(() => {
@@ -167,12 +155,13 @@ const App: React.FC = () => {
         setMessages((prev) => [...prev, errorMessage]);
         return;
       }
-      
+
       // Voice input complete, send to AI
       console.log('📝 Sending transcript to AI:', transcript);
       handleSendMessage(transcript);
     }
-  }, [transcript, isListening, handleSendMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcript, isListening]);
 
   // Show voice errors
   useEffect(() => {
@@ -220,24 +209,24 @@ const App: React.FC = () => {
         alert('Voice input is not supported in this browser. Please use a Chromium-based browser.');
         return;
       }
-      
+
       // Warn user about headphones for best experience
       const hasSeenWarning = localStorage.getItem('conversational-mode-warning-seen');
       if (!hasSeenWarning) {
         const useHeadphones = confirm(
-          '🎧 Conversational Mode works best with HEADPHONES!\n\n' +
-          'Without headphones, the microphone may pick up the AI\'s voice from your speakers.\n\n' +
-          '✅ Click OK if you\'re using headphones\n' +
-          '❌ Click Cancel to setup headphones first'
+            '🎧 Conversational Mode works best with HEADPHONES!\n\n' +
+            'Without headphones, the microphone may pick up the AI\'s voice from your speakers.\n\n' +
+            '✅ Click OK if you\'re using headphones\n' +
+            '❌ Click Cancel to setup headphones first'
         );
-        
+
         if (!useHeadphones) {
           return;
         }
-        
+
         localStorage.setItem('conversational-mode-warning-seen', 'true');
       }
-      
+
       startConversationalMode();
     }
   };
@@ -247,71 +236,69 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden ios-glass-background">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/10 via-banana-500/8 to-amber-200/10 animate-gradient" />
-      <div className="absolute inset-0 backdrop-blur-2xl" />
+      <div className="w-full h-full relative overflow-hidden ios-glass-background">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/10 via-banana-500/8 to-amber-200/10 animate-gradient" />
+        <div className="absolute inset-0 backdrop-blur-2xl" />
 
-      {/* Settings Panel */}
-      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+        {/* Settings Panel */}
+        <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
-      {/* Main Content - Hide when settings are open */}
-      {!isSettingsOpen && (
-        <>
-          {/* Settings Button - Upper Left */}
-          <SettingsButton onClick={handleSettings} />
+        {/* Main Content - Hide when settings are open */}
+        {!isSettingsOpen && (
+            <>
+              {/* Settings Button - Upper Left */}
+              <SettingsButton onClick={handleSettings} />
 
-          <div className="relative w-full h-full flex flex-col z-10">
-            {/* Banana at top center */}
-            <div className="flex-shrink-0 pt-8 pb-4 flex justify-center">
-               <Banana state={animationState} personality={personality} />
-            </div>
-
-            {/* Chat Messages Area */}
-            <div
-              ref={chatContainerRef}
-              className="flex-1 overflow-y-auto px-4 pb-32 scroll-smooth no-drag"
-              style={{ scrollbarWidth: 'thin' }}
-            >
-              {voiceError && (
-                <div className="text-red-500 text-xs text-center mb-2 px-2">
-                  {voiceError}
+              <div className="relative w-full h-full flex flex-col z-10">
+                {/* Banana at top center */}
+                <div className="flex-shrink-0 pt-8 pb-4 flex justify-center">
+                  <Banana state={animationState} personality={personality} />
                 </div>
-              )}
-              <div className="max-w-2xl mx-auto space-y-3">
-                {messages.map((message) => (
-                  <ChatBubble key={message.id} message={message} />
-                ))}
-                {isLoading && (
-                  <div className="flex justify-end mb-2">
-                    <div className="glass-bubble px-4 py-2 rounded-2xl rounded-br-sm">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
-            {/* The wrapper ignores pointer events, but the child re-enables them */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex justify-center">
-              <ChatInput
-                ref={inputRef}
-                onSendMessage={handleSendMessage}
-                onVoiceInput={handleVoiceInput}
-                onConversationalMode={handleConversationalMode}
-                isListening={isListening}
-                isConversationalMode={isConversationalMode}
-              />
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+                {/* Chat Messages Area */}
+                <div
+                    ref={chatContainerRef}
+                    className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth"
+                    style={{ scrollbarWidth: 'thin' }}
+                >
+                  {voiceError && (
+                      <div className="text-red-500 text-xs text-center mb-2 px-2">
+                        {voiceError}
+                      </div>
+                  )}
+                  <div className="max-w-2xl mx-auto space-y-3">
+                    {messages.map((message) => (
+                        <ChatBubble key={message.id} message={message} />
+                    ))}
+                    {isLoading && (
+                        <div className="flex justify-end mb-2">
+                          <div className="glass-bubble px-4 py-2 rounded-2xl rounded-br-sm">
+                            <div className="flex gap-1">
+                              <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                              <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                          </div>
+                        </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
+                <div className="absolute bottom-4 left-0 right-0 px-4 z-20 pointer-events-none">
+                  <ChatInput
+                      onSendMessage={handleSendMessage}
+                      onVoiceInput={handleVoiceInput}
+                      onConversationalMode={handleConversationalMode}
+                      isListening={isListening}
+                      isConversationalMode={isConversationalMode}
+                  />
+                </div>
+              </div>
+            </>
+        )}
+      </div>
   );
 };
 
