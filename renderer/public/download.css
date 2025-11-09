@@ -422,6 +422,52 @@ footer {
   transform: scale(1.05) translateY(-5px);
 }
 
+.personalities {
+  padding: 4rem 0;
+}
+
+.personality-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  justify-content: center;
+}
+
+.personality-card {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.personality-card:hover {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.personality-card img {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1rem auto;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.2));
+  transition: transform 0.3s ease;
+}
+
+.personality-card:hover img {
+  transform: rotate(-10deg) scale(1.1);
+}
+
+.personality-card h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--dark-text);
+}
+
 @media (max-width: 768px) {
   .hero {
     grid-template-columns: 1fr;
