@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimationState, PersonalityType } from '../../../shared/types';
 import bananaImage from '../../../images/coolbanana.png';
@@ -6,6 +6,7 @@ import studyBananaImage from '../../../images/studybanana.png';
 import hypeBananaImage from '../../../images/hypebanana.png';
 import chillBananaImage from '../../../images/chillbanana.png';
 import memeBananaImage from '../../../images/memebanana-removebg-preview.png';
+import talkingBananaSprite from '../../../images/defaultbanana_talking.png';
 
 interface BananaProps {
   state: AnimationState;
@@ -13,6 +14,49 @@ interface BananaProps {
 }
 
 const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
+  const [currentFrame, setCurrentFrame] = useState(0);
+  const animationFrameRef = useRef<number>();
+  const lastFrameTimeRef = useRef<number>(0);
+  
+  // Sprite animation configuration
+  const TOTAL_FRAMES = 36;
+  const FRAME_DURATION = 1000 / 24; // 24 FPS
+  const FRAMES_PER_ROW = 6; // Assuming 6x6 grid
+  const SPRITE_SIZE = 200; // Size of each frame in the sprite sheet
+
+  // Animate sprite frames when speaking
+  useEffect(() => {
+    if (state === 'speaking') {
+      const animate = (timestamp: number) => {
+        if (!lastFrameTimeRef.current) {
+          lastFrameTimeRef.current = timestamp;
+        }
+
+        const elapsed = timestamp - lastFrameTimeRef.current;
+
+        if (elapsed >= FRAME_DURATION) {
+          setCurrentFrame((prev) => (prev + 1) % TOTAL_FRAMES);
+          lastFrameTimeRef.current = timestamp;
+        }
+
+        animationFrameRef.current = requestAnimationFrame(animate);
+      };
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+
+      return () => {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        lastFrameTimeRef.current = 0;
+      };
+    } else {
+      // Reset to first frame when not speaking
+      setCurrentFrame(0);
+      lastFrameTimeRef.current = 0;
+    }
+  }, [state]);
+
   // Select image based on personality
   const getBananaImage = () => {
     switch (personality) {
@@ -30,6 +74,16 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
   };
 
   const currentImage = getBananaImage();
+
+  // Calculate sprite position for current frame
+  const getSpritePosition = () => {
+    const row = Math.floor(currentFrame / FRAMES_PER_ROW);
+    const col = currentFrame % FRAMES_PER_ROW;
+    return {
+      backgroundPositionX: `-${col * SPRITE_SIZE}px`,
+      backgroundPositionY: `-${row * SPRITE_SIZE}px`,
+    };
+  };
 
   // Motion variants for container
   const containerVariants = {
@@ -121,26 +175,39 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
       animate={state}
       initial="idle"
     >
-      {/* Banana Character - changes based on personality */}
-      <motion.img
-        src={currentImage}
-        alt={
-          personality === 'study' 
-            ? 'Study Banana Character' 
-            : personality === 'hype'
-            ? 'Hype Banana Character'
-            : personality === 'chill'
-            ? 'Chill Banana Character'
-            : personality === 'meme'
-            ? 'Meme Banana Character'
-            : 'Cool Banana Character'
-        }
-        className="w-48 h-48 object-contain"
-        style={{
-          filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))',
-        }}
-        key={personality} // Force re-render when personality changes
-      />
+      {/* Banana Character - changes based on personality or shows sprite when speaking */}
+      {state === 'speaking' ? (
+        <div
+          className="w-48 h-48"
+          style={{
+            backgroundImage: `url(${talkingBananaSprite})`,
+            backgroundSize: `${SPRITE_SIZE * FRAMES_PER_ROW}px ${SPRITE_SIZE * FRAMES_PER_ROW}px`,
+            ...getSpritePosition(),
+            filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))',
+            imageRendering: 'crisp-edges',
+          }}
+        />
+      ) : (
+        <motion.img
+          src={currentImage}
+          alt={
+            personality === 'study' 
+              ? 'Study Banana Character' 
+              : personality === 'hype'
+              ? 'Hype Banana Character'
+              : personality === 'chill'
+              ? 'Chill Banana Character'
+              : personality === 'meme'
+              ? 'Meme Banana Character'
+              : 'Cool Banana Character'
+          }
+          className="w-48 h-48 object-contain"
+          style={{
+            filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))',
+          }}
+          key={personality} // Force re-render when personality changes
+        />
+      )}
 
       {/* Sleeping Z's */}
       <AnimatePresence>
