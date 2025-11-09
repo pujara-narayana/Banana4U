@@ -44,7 +44,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="no-drag fixed inset-0 bg-gray-900 z-50 flex flex-col overflow-hidden"
+          className="fixed inset-0 bg-gray-900 z-50 flex flex-col"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -89,7 +89,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain" style={{minHeight:0, touchAction:'pan-y'}}>
               {/* General Tab */}
               {activeTab === 'general' && (
                 <div className="space-y-4">
