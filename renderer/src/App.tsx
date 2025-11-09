@@ -350,7 +350,7 @@ const App: React.FC = () => {
           <div className="relative z-10 flex h-full w-full flex-col">
             {/* Banana at top center */}
             <div
-              className="animate-subtle-scale flex flex-shrink-0 justify-center pb-4 pt-8"
+              className="animate-subtle-scale pointer-events-none flex flex-shrink-0 justify-center pb-4 pt-8"
               style={{
                 transform: `scale(${bananaScale})`,
                 transition: "transform 0.2s ease-out",

@@ -36,13 +36,13 @@ const Welcome: React.FC<WelcomeProps> = ({ onContinue }) => {
         className="no-drag relative z-10 m-auto flex w-full max-w-md flex-col items-center justify-center overflow-y-auto overscroll-contain py-8"
         style={{ minHeight: 0 }}
       >
-        <div className="mb-4 h-36 w-36 sm:mb-6 sm:h-48 sm:w-48">
+        <div className="pointer-events-none mb-4 h-36 w-36 sm:mb-6 sm:h-48 sm:w-48">
           <Banana state="idle" personality="default" />
         </div>
-        <h1 className="mb-2 text-3xl font-bold text-white sm:text-4xl">
+        <h1 className="mb-2 px-4 text-3xl font-bold text-white sm:text-4xl">
           Welcome to Banana4U!
         </h1>
-        <p className="mb-6 text-base text-white/80 sm:mb-8 sm:text-lg">
+        <p className="mb-6 px-4 text-base text-white/80 sm:mb-8 sm:text-lg">
           Your friendly, context-aware AI assistant. Ready to help you with
           anything on your screen.
         </p>
