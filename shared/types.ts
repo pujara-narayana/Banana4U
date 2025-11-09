@@ -189,7 +189,10 @@ export interface ElectronAPI {
   // Text to Speech
   generateTTS: (text: string) => Promise<string>; // Returns base64 encoded audio
   playTTSBase64: (base64Audio: string) => Promise<void>; // Plays base64 MP3 via main process
-  generateTTSFile: (text: string) => Promise<string>; // Returns temp file path to MP3
+  // Returns temp file path to MP3 plus detected duration in seconds (may be null if unavailable)
+  generateTTSFile: (
+    text: string
+  ) => Promise<{ filePath: string; durationSec: number | null }>;
   playTTSFile: (filePath: string) => Promise<void>; // Plays MP3 by file path
   stopTTSPlayback: () => Promise<void>; // Stops any active TTS playback
 

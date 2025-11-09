@@ -28,6 +28,7 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const savedVolumeRef = useRef<number>(1.0);
+  const lastDurationMsRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Initialize audio element
@@ -48,10 +49,19 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
         return;
       }
 
-      // Don't speak if muted
-      if (isMuted) {
-        console.log("🔇 TTS is muted, skipping speech");
+      // Respect mute ONLY while actively recording; if we're not recording anymore,
+      // proceed even if the muted flag hasn't been flipped yet (race safety)
+      const isRecording =
+        typeof document !== "undefined" &&
+        (document.body.dataset as any).recording === "true";
+      if (isMuted && isRecording) {
+        console.log("🔇 TTS is muted during recording, skipping speech");
         return;
+      }
+      if (isMuted && !isRecording) {
+        console.log(
+          "⚠️ TTS muted flag set but not recording; proceeding with speech to avoid race"
+        );
       }
 
       // Stop any ongoing speech (renderer audio element not used for playback now)
@@ -66,6 +76,11 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
           "📝 [Renderer] Text to speak:",
           text.substring(0, 100) + (text.length > 100 ? "..." : "")
         );
+        console.log("🔍 [Renderer] TTS State before generation:", {
+          isMuted,
+          isRecording,
+          existingSpeaking: isSpeaking,
+        });
 
         // Force-stop any previous TTS playback in case it was overlapping
         try {
@@ -74,15 +89,72 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
           /* ignore */
         }
 
-        // Set speaking state immediately for animation
-        setIsSpeaking(true);
+        // Mark as pending so listener can anticipate upcoming TTS
+        if (typeof document !== "undefined") {
+          document.body.dataset.ttsPending = "true";
+        }
 
-        // Generate MP3 file in main process and play it (will block until finished)
-        const filePath = await window.electron.generateTTSFile(text);
+        // Generate MP3 file in main process and get duration
+        const { filePath, durationSec } = await window.electron.generateTTSFile(text);
+        const exists = filePath ? true : false;
         console.log("💾 [Renderer] TTS file generated at", filePath);
-        await window.electron.playTTSFile(filePath);
+        if (!exists) {
+          console.warn("⚠️ [Renderer] TTS file path missing; aborting playback");
+          setIsSpeaking(false);
+          return;
+        }
+
+        // Publish duration so conversational loop can wait appropriately
+        lastDurationMsRef.current = durationSec
+          ? Math.ceil(durationSec * 1000)
+          : null;
+        if (typeof document !== "undefined") {
+          if (lastDurationMsRef.current != null) {
+            document.body.dataset.ttsDurationMs = String(
+              lastDurationMsRef.current
+            );
+          } else {
+            delete (document.body.dataset as any).ttsDurationMs;
+          }
+        }
+
+        // Play file in main process while tracking actual completion (more accurate than estimate)
+        const startedAt = Date.now();
+        setIsSpeaking(true);
+        if (typeof document !== "undefined") {
+          document.body.dataset.ttsStartedAt = String(startedAt);
+          delete (document.body.dataset as any).ttsPending;
+          // Keep estimated waitUntil for early-cycle waits but we'll update with actual end when done
+          if (lastDurationMsRef.current != null) {
+            document.body.dataset.ttsWaitUntil = String(
+              startedAt + lastDurationMsRef.current + 1000
+            );
+          }
+        }
+
+        // Confirm file exists before playback
+        try {
+          // We can't access fs directly in renderer without nodeIntegration; rely on main success.
+          console.log("▶️ [Renderer] Starting playback via main...");
+          await window.electron.playTTSFile(filePath); // blocks until finished
+        } catch (playErr) {
+          console.error("❌ [Renderer] Playback error:", playErr);
+          // Attempt graceful fallback: mark speaking false
+          setIsSpeaking(false);
+          return;
+        }
+        const finishedAt = Date.now();
+        if (typeof document !== "undefined") {
+          // Overwrite with precise completion-based wait marker (0 extra so loop uses speaking flag buffer)
+          document.body.dataset.ttsWaitUntil = String(finishedAt); // immediate pass
+        }
         console.log("🛑 [Renderer] File playback completed");
         setIsSpeaking(false);
+        if (typeof document !== "undefined") {
+          // Keep ttsWaitUntil for the listening loop to honor; clean others optionally
+          // We'll leave ttsWaitUntil in place to ensure next cycle waits even if playback already ended
+          delete (document.body.dataset as any).ttsPending;
+        }
       } catch (error) {
         console.error("❌ [Renderer] ElevenLabs TTS error:", error);
         if (error instanceof Error) {
@@ -90,6 +162,12 @@ export const useTextToSpeech = (): UseTextToSpeechResult => {
           console.error("Error stack:", error.stack);
         }
         setIsSpeaking(false);
+        if (typeof document !== "undefined") {
+          delete (document.body.dataset as any).ttsStartedAt;
+          delete (document.body.dataset as any).ttsDurationMs;
+          delete (document.body.dataset as any).ttsPending;
+          delete (document.body.dataset as any).ttsWaitUntil;
+        }
       }
     },
     [isSupported, volume, isMuted]

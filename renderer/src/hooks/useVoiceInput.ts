@@ -648,6 +648,99 @@ export const useVoiceInput = (): UseVoiceInputResult => {
   const listenContinuously = async (apiKey: string) => {
     while (conversationalModeRef.current) {
       try {
+        // Half-duplex: wait for TTS from PREVIOUS cycle based on generated duration + 1s buffer
+        // This happens at the START of each cycle (except the first)
+        console.log("⏳ Sync start: ensuring previous or pending TTS finished...");
+        let waited = false;
+        if (typeof document !== "undefined") {
+          const d = document.body.dataset as any;
+          // If no markers yet, briefly poll for any pending/start markers to appear (race guard)
+          if (!d.ttsWaitUntil && d.ttsPending !== "true" && !d.ttsStartedAt) {
+            let appearTries = 0;
+            while (
+              !document.body.dataset.ttsWaitUntil &&
+              document.body.dataset.ttsPending !== "true" &&
+              !document.body.dataset.ttsStartedAt &&
+              appearTries < 20 // ~1s total
+            ) {
+              await new Promise((r) => setTimeout(r, 50));
+              appearTries++;
+            }
+          }
+          // Primary: wait using precomputed ttsWaitUntil if present
+          if (d.ttsWaitUntil) {
+            const until = Number(d.ttsWaitUntil);
+            if (Number.isFinite(until)) {
+              const remaining = until - Date.now();
+              if (remaining > 0 && remaining < 120000) {
+                console.log(`⏱️  Waiting ${remaining}ms until TTS post-wait deadline`);
+                await new Promise((r) => setTimeout(r, remaining));
+                waited = true;
+              } else if (remaining <= 0) {
+                // Already past the deadline
+                waited = true;
+              }
+            }
+          }
+
+          if (!waited) {
+          // If generation is pending, wait briefly for it to start
+          if (d.ttsPending === "true") {
+            console.log("⏳ TTS generation pending; polling for start...");
+            let genTries = 0;
+            while (document.body.dataset.ttsPending === "true" && genTries < 200) {
+              await new Promise((r) => setTimeout(r, 50));
+              genTries++;
+            }
+          }
+
+          const durationMs = d.ttsDurationMs ? Number(d.ttsDurationMs) : 0;
+          const startedAt = d.ttsStartedAt ? Number(d.ttsStartedAt) : 0;
+
+          if (durationMs > 0 && startedAt > 0) {
+            const endAt = startedAt + durationMs + 1000; // add 1s buffer
+            const remaining = endAt - Date.now();
+            if (remaining > 0 && remaining < 120000) {
+              console.log(
+                `⏱️  Waiting ${remaining}ms for TTS to complete (duration ${durationMs}ms + 1s buffer)`
+              );
+              await new Promise((r) => setTimeout(r, remaining));
+              waited = true;
+            } else if (remaining <= 0) {
+              console.log("✅ TTS already completed (remaining", remaining, "ms)");
+              waited = true;
+            }
+          }
+          }
+        }
+        // Fallback: if no duration info, wait until speaking flag clears or timeout
+        if (!waited && isSpeakingCallbackRef.current) {
+          console.log("⏳ No timing info; polling isSpeaking flag...");
+          let tries = 0;
+          while (isSpeakingCallbackRef.current() === true && tries < 1200) {
+            await new Promise((r) => setTimeout(r, 50));
+            tries++;
+          }
+          await new Promise((r) => setTimeout(r, 200));
+        }
+
+        // Final guard: even if we already waited based on timing, ensure speaking actually ended
+        if (isSpeakingCallbackRef.current) {
+          let tries = 0;
+          while (isSpeakingCallbackRef.current() === true && tries < 1200) {
+            await new Promise((r) => setTimeout(r, 50));
+            tries++;
+          }
+        }
+
+        // Cleanup wait markers to avoid compounding waits
+        if (typeof document !== "undefined") {
+          delete (document.body.dataset as any).ttsWaitUntil;
+          // Optional: also clear startedAt/duration to prevent stale reuse
+          delete (document.body.dataset as any).ttsStartedAt;
+          delete (document.body.dataset as any).ttsDurationMs;
+        }
+
         // MUTE ALL TTS OUTPUT - completely silence system audio
         console.log("🔇 MUTING all TTS output to prevent microphone pickup...");
         if (muteSpeakingCallbackRef.current) {
@@ -843,23 +936,51 @@ export const useVoiceInput = (): UseVoiceInputResult => {
               delete (document.body.dataset as any).recording;
             }
 
-            // Half-duplex: wait for TTS to finish before next listen cycle starts
-            if (isSpeakingCallbackRef.current) {
-              let tries = 0;
-              // Wait up to ~30s (600 * 50ms)
-              while (isSpeakingCallbackRef.current() === true && tries < 600) {
-                await new Promise((r) => setTimeout(r, 50));
-                tries++;
-              }
-              // Small extra delay to let OS audio tail off
-              await new Promise((r) => setTimeout(r, 200));
-            }
-
             resolve();
           };
         });
 
-        // No need to wait here - we'll mute again at the start of the next loop
+        // Half-duplex hard guard: after user stops, do not resume listening until
+        // the assistant has finished speaking (or we time out waiting for output).
+        // 1) Wait (up to ~30s) for TTS to begin (ttsPending/isSpeaking/ttsStartedAt)
+        // 2) Then wait until isSpeaking turns false (playback finished)
+        {
+          const maxStartWaitMs = 30000; // 30s to see output start
+          const startPollMs = 100;
+          let waitedMs = 0;
+          let outputStarted = false;
+
+          while (conversationalModeRef.current && waitedMs < maxStartWaitMs) {
+            const d = typeof document !== "undefined" ? (document.body.dataset as any) : {};
+            const pending = d.ttsPending === "true";
+            const startedAt = d.ttsStartedAt ? Number(d.ttsStartedAt) : 0;
+            if (pending || startedAt > 0 || isSpeakingCallbackRef.current?.() === true) {
+              outputStarted = true;
+              break;
+            }
+            await new Promise((r) => setTimeout(r, startPollMs));
+            waitedMs += startPollMs;
+          }
+
+          if (outputStarted) {
+            // Wait until speaking finishes
+            let tries = 0;
+            while (isSpeakingCallbackRef.current?.() === true && tries < 1800) {
+              await new Promise((r) => setTimeout(r, 50));
+              tries++;
+            }
+            // small tail
+            await new Promise((r) => setTimeout(r, 200));
+          }
+
+          // Cleanup markers to avoid double waits on next iteration
+          if (typeof document !== "undefined") {
+            delete (document.body.dataset as any).ttsWaitUntil;
+            delete (document.body.dataset as any).ttsStartedAt;
+            delete (document.body.dataset as any).ttsDurationMs;
+            delete (document.body.dataset as any).ttsPending;
+          }
+        }
       } catch (err: any) {
         console.error("❌ Conversational mode error:", err);
         if (conversationalModeRef.current) {

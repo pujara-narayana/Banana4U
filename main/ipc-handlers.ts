@@ -84,7 +84,7 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle(IPC_CHANNELS.TTS_GENERATE, async (_event, text: string) => {
     try {
       const ELEVENLABS_API_KEY =
-        "sk_9e0fe488566abbecc16cb40ac5ff6327c5502f3652c1912c";
+        "sk_8269d24a077cb6cd85794f4449f14c52251041fb0d2a5f1d";
       const ELEVENLABS_VOICE_ID = "mdzEgLpu0FjTwYs5oot0"; // Rachel - free voice
 
       console.log("🗣️ [Main Process] Generating speech with ElevenLabs...");
@@ -148,7 +148,7 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
     async (_event, text: string) => {
       try {
         const ELEVENLABS_API_KEY =
-          "sk_9e0fe488566abbecc16cb40ac5ff6327c5502f3652c1912c";
+          "sk_8269d24a077cb6cd85794f4449f14c52251041fb0d2a5f1d";
         const ELEVENLABS_VOICE_ID = "mdzEgLpu0FjTwYs5oot0"; // Rachel - free voice
 
         console.log(
@@ -182,7 +182,33 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
         const filePath = path.join(tmpDir, `banana4u-tts-${Date.now()}.mp3`);
         await fs.promises.writeFile(filePath, Buffer.from(audioBuffer));
         console.log("💾 [Main Process] Wrote ElevenLabs MP3 to", filePath);
-        return { success: true, data: filePath };
+
+        // Try to determine duration (in seconds) using macOS afinfo
+        let durationSec = await getAudioDurationSec(filePath);
+        if (durationSec != null) {
+          console.log(
+            `⏱️  [Main Process] Estimated audio duration: ${durationSec.toFixed(
+              3
+            )} sec`
+          );
+        } else {
+          console.warn(
+            "⚠️  [Main Process] Could not determine audio duration via afinfo"
+          );
+          // Fallback: estimate duration based on text length (approx 3.2 words/sec)
+          const est = estimateSpeechDurationSec(text);
+          durationSec = est;
+          console.log(
+            `⏱️  [Main Process] Using estimated duration based on text: ${durationSec.toFixed(
+              3
+            )} sec`
+          );
+        }
+
+        return {
+          success: true,
+          data: { filePath, durationSec: durationSec ?? null },
+        };
       } catch (error) {
         console.error("❌ [Main Process] Generate TTS file failed:", error);
         return { success: false, error: (error as Error).message };
@@ -551,6 +577,51 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
   );
 
   console.log("✅ IPC handlers registered");
+}
+
+/**
+ * Get audio duration in seconds using macOS 'afinfo'. Returns null if unavailable.
+ */
+async function getAudioDurationSec(filePath: string): Promise<number | null> {
+  if (process.platform !== "darwin") return null;
+  return new Promise((resolve) => {
+    try {
+      const proc = spawn("afinfo", [filePath]);
+      let out = "";
+      proc.stdout.on("data", (d) => (out += String(d)));
+      proc.stderr.on("data", (d) => (out += String(d)));
+      proc.on("error", () => resolve(null));
+      proc.on("close", () => {
+        // Look for a line like: "duration: 3.405000 sec" or "estimated duration: 3.405000 sec"
+        const match = out
+          .toLowerCase()
+          .match(/(estimated\s+)?duration:\s*([0-9.]+)\s*sec/);
+        if (match && match[2]) {
+          const sec = parseFloat(match[2]);
+          if (!Number.isNaN(sec) && Number.isFinite(sec)) return resolve(sec);
+        }
+        resolve(null);
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * Roughly estimate speech duration based on word count.
+ * Assumes about 3.2 words/sec, adds a small constant for latency, clamps to minimum.
+ */
+function estimateSpeechDurationSec(text: string): number {
+  try {
+    const words = (text || "").trim().split(/\s+/).filter(Boolean).length;
+    const wordsPerSec = 3.2; // ~192 wpm
+    const baseLatency = 0.3; // small overhead
+    const sec = words / wordsPerSec + baseLatency;
+    return Math.max(1.5, Math.min(sec, 120));
+  } catch {
+    return 2.0;
+  }
 }
 
 function getDefaultSettings() {

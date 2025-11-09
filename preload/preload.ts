@@ -90,7 +90,7 @@ const electronAPI: ElectronAPI = {
       text
     );
     if (result.success) {
-      return result.data as string; // file path
+      return result.data as { filePath: string; durationSec: number | null };
     }
     throw new Error(result.error || "Failed to generate TTS file");
   },
