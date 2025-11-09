@@ -83,9 +83,12 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
   // Text to Speech - ElevenLabs
   ipcMain.handle(IPC_CHANNELS.TTS_GENERATE, async (_event, text: string) => {
     try {
-      const ELEVENLABS_API_KEY =
-        "sk_8269d24a077cb6cd85794f4449f14c52251041fb0d2a5f1d";
-      const ELEVENLABS_VOICE_ID = "mdzEgLpu0FjTwYs5oot0"; // Rachel - free voice
+      const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+      const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "mdzEgLpu0FjTwYs5oot0"; // Rachel - free voice
+
+      if (!ELEVENLABS_API_KEY) {
+        throw new Error("ELEVENLABS_API_KEY is not set in environment variables");
+      }
 
       console.log("🗣️ [Main Process] Generating speech with ElevenLabs...");
       console.log(
@@ -147,9 +150,12 @@ export function setupIPCHandlers(mainWindow: BrowserWindow): void {
     IPC_CHANNELS.TTS_GENERATE_FILE,
     async (_event, text: string) => {
       try {
-        const ELEVENLABS_API_KEY =
-          "sk_8269d24a077cb6cd85794f4449f14c52251041fb0d2a5f1d";
-        const ELEVENLABS_VOICE_ID = "mdzEgLpu0FjTwYs5oot0"; // Rachel - free voice
+        const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+        const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "mdzEgLpu0FjTwYs5oot0"; // Rachel - free voice
+
+        if (!ELEVENLABS_API_KEY) {
+          throw new Error("ELEVENLABS_API_KEY is not set in environment variables");
+        }
 
         console.log(
           "🗣️ [Main Process] Generating speech (file) with ElevenLabs..."
