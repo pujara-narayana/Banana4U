@@ -264,7 +264,7 @@ const App: React.FC = () => {
           <div className="relative w-full h-full flex flex-col z-10">
             {/* Banana at top center */}
             <div className="flex-shrink-0 pt-8 pb-4 flex justify-center">
-              <Banana state={animationState} />
+               <Banana state={animationState} personality={personality} />
             </div>
 
             {/* Chat Messages Area */}
