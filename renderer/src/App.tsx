@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Banana from './components/Banana';
 import ChatBubble from './components/ChatBubble';
 import ChatInput from './components/ChatInput';
@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [personality, setPersonality] = useState<PersonalityType>('default');
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Hooks
   const { 
@@ -78,6 +79,17 @@ const App: React.FC = () => {
     setUnmuteSpeakingCallback(() => unmuteSpeaking);
   }, [isSpeaking, setSpeakingCallback, stopSpeaking, setStopSpeakingCallback, muteSpeaking, setMuteSpeakingCallback, unmuteSpeaking, setUnmuteSpeakingCallback]);
 
+  // Listen for global hotkey to focus input
+  useEffect(() => {
+    const removeListener = window.electron.onFocusInput(() => {
+      console.log('Focus event received from main process.');
+      inputRef.current?.focus();
+    });
+
+    // Cleanup the listener when the component unmounts
+    return () => removeListener();
+  }, []);
+
   // Update animation state based on various states
   useEffect(() => {
     if (isListening) {
@@ -91,7 +103,7 @@ const App: React.FC = () => {
     }
   }, [isListening, isLoading, isSpeaking]);
 
-  const handleSendMessage = async (messageText: string) => {
+  const handleSendMessage = useCallback(async (messageText: string) => {
     if (!messageText.trim()) return;
 
     try {
@@ -137,7 +149,7 @@ const App: React.FC = () => {
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
-  };
+  }, [currentScreenContext, sendMessage, sendMessageWithAutoScreenshot, setLastAIResponse, speak]);
 
   // Handle voice transcript
   useEffect(() => {
@@ -160,8 +172,7 @@ const App: React.FC = () => {
       console.log('📝 Sending transcript to AI:', transcript);
       handleSendMessage(transcript);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transcript, isListening]);
+  }, [transcript, isListening, handleSendMessage]);
 
   // Show voice errors
   useEffect(() => {
@@ -253,13 +264,13 @@ const App: React.FC = () => {
           <div className="relative w-full h-full flex flex-col z-10">
             {/* Banana at top center */}
             <div className="flex-shrink-0 pt-8 pb-4 flex justify-center">
-              <Banana state={animationState} personality={personality} />
+              <Banana state={animationState} />
             </div>
 
             {/* Chat Messages Area */}
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth"
+              className="flex-1 overflow-y-auto px-4 pb-32 scroll-smooth no-drag"
               style={{ scrollbarWidth: 'thin' }}
             >
               {voiceError && (
@@ -286,8 +297,10 @@ const App: React.FC = () => {
             </div>
 
             {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
-            <div className="absolute bottom-4 left-0 right-0 px-4 z-20 pointer-events-none">
+            {/* The wrapper ignores pointer events, but the child re-enables them */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex justify-center">
               <ChatInput
+                ref={inputRef}
                 onSendMessage={handleSendMessage}
                 onVoiceInput={handleVoiceInput}
                 onConversationalMode={handleConversationalMode}

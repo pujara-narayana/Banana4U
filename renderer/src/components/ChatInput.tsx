@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, MessageCircle } from "lucide-react";
 
@@ -10,13 +10,13 @@ interface ChatInputProps {
   isConversationalMode: boolean;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({
+const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(({
   onSendMessage,
   onVoiceInput,
   onConversationalMode,
   isListening,
   isConversationalMode,
-}) => {
+}, ref) => {
   const [inputValue, setInputValue] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,6 +62,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
         <input
+          ref={ref}
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
@@ -113,6 +114,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
       </form>
     </div>
   );
-};
+});
+
+ChatInput.displayName = 'ChatInput';
 
 export default ChatInput;

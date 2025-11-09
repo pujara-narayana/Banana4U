@@ -83,6 +83,14 @@ const electronAPI: ElectronAPI = {
     await ipcRenderer.invoke(IPC_CHANNELS.HOTKEY_UNREGISTER, key);
   },
 
+  // Add this method to handle the focus hotkey
+  onFocusInput: (callback: () => void) => {
+    const channel = 'hotkey:focus-input';
+    ipcRenderer.on(channel, callback);
+    // Return a cleanup function to be used in useEffect
+    return () => ipcRenderer.removeListener(channel, callback);
+  },
+
   // System
   getSystemInfo: async () => {
     const result = await ipcRenderer.invoke(IPC_CHANNELS.GET_SYSTEM_INFO);
