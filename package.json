@@ -76,6 +76,11 @@
       "dist/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "**/node_modules/sharp/**",
+      "**/node_modules/@img/sharp-libvips-*/**",
+      "**/node_modules/@img/sharp-*/**"
+    ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
