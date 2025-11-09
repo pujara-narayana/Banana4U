@@ -5,7 +5,7 @@ import {
   PersonalityType,
   ScreenContext,
 } from "../../../shared/types";
-import MemeGenerator from "./meme-generator";
+import { generateMeme } from "./meme-generator";
 
 export interface ConversationMessage {
   role: "user" | "assistant";
@@ -16,7 +16,7 @@ export interface GenerateResponseResult {
   text: string;
   memeData?: {
     imageUrl: string;
-    caption: string;
+    // caption: string;
     topText?: string;
     bottomText?: string;
   };
@@ -24,12 +24,10 @@ export interface GenerateResponseResult {
 
 class GeminiClient {
   private apiKey: string;
-  private memeGenerator: MemeGenerator;
 
   constructor(apiKey?: string) {
     // Prefer explicit provided key (e.g., from settings store); fall back to env-injected key.
     this.apiKey = apiKey || (process.env.GEMINI_API_KEY as string) || "";
-    this.memeGenerator = new MemeGenerator(this.apiKey);
   }
 
   /**
@@ -166,6 +164,7 @@ class GeminiClient {
 
   /**
    * Generate a meme response for the meme personality
+   * Ultra-simple: just takes user's prompt and generates an image!
    */
   private async generateMemeResponse(
     userQuery: string,
@@ -173,32 +172,38 @@ class GeminiClient {
     conversationHistory: ConversationMessage[] = []
   ): Promise<GenerateResponseResult> {
     try {
-      console.log("🎭 Generating meme for query:", userQuery);
+      console.log("🎭 [MEME] Starting meme generation for user query:", userQuery);
 
-      // Generate the meme using the meme generator service
-      const memeData = await this.memeGenerator.generateMeme(
-        userQuery,
-        screenContext?.text
-      );
+      // Generate image directly from user's prompt - no complex analysis!
+      const memeData = await generateMeme(userQuery);
 
-      console.log("✅ Meme generated successfully:", memeData);
+      console.log("✅ [MEME] Image generated successfully!");
+      console.log("  📊 Meme data:", {
+        hasImageUrl: !!memeData.imageUrl,
+        imageUrlLength: memeData.imageUrl?.length || 0,
+        caption: memeData.caption,
+      });
 
-      // Return both the meme caption as text and the meme data
-      return {
+      // Return both the caption text AND the meme data with image
+      const result: GenerateResponseResult = {
         text: memeData.caption,
         memeData: {
           imageUrl: memeData.imageUrl,
-          caption: memeData.caption,
-          topText: memeData.topText,
-          bottomText: memeData.bottomText,
+          // caption: memeData.caption,
         },
       };
+
+      console.log("✅ [MEME] Returning result with memeData:", !!result.memeData);
+      console.log("  🖼️ ImageUrl starts with:", result.memeData?.imageUrl.substring(0, 30));
+
+      return result;
     } catch (error) {
-      console.error("❌ Meme generation failed:", error);
-      // Fallback to regular text response with humor
-      const fallbackResponse = this.getSystemPrompt("meme");
+      console.error("❌ [MEME] Image generation failed:", error);
+      console.error("❌ [MEME] Error details:", error instanceof Error ? error.message : String(error));
+
+      // Fallback to text-only response
       return {
-        text: "Oops! This banana split trying to make a meme! Let me just say something funny instead: Why did the banana go to the doctor? Because it wasn't peeling well! 🍌😄",
+        text: "Oops! I couldn't generate that image right now. Try again! 🍌",
         memeData: undefined,
       };
     }

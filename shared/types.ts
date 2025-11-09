@@ -20,7 +20,7 @@ export interface Message {
   screenContext?: ScreenContext;
   meme?: {
     imageUrl: string;
-    caption: string;
+    // caption: string;
     topText?: string;
     bottomText?: string;
   };

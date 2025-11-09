@@ -115,6 +115,12 @@ const App: React.FC = () => {
           ? await sendMessage(messageText, currentScreenContext)
           : await sendMessageWithAutoScreenshot(messageText);
 
+      console.log('📬 [APP] Received AI response:', {
+        hasText: !!aiResponse.text,
+        hasMemeData: !!aiResponse.memeData,
+        memeImageUrl: aiResponse.memeData?.imageUrl?.substring(0, 50) + '...',
+      });
+
       // Add assistant message with potential meme data
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -123,6 +129,9 @@ const App: React.FC = () => {
         timestamp: new Date(),
         meme: aiResponse.memeData,
       };
+
+      console.log('💬 [APP] Creating message with meme:', !!assistantMessage.meme);
+
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Store AI response for voice filtering

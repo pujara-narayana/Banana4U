@@ -1,159 +1,58 @@
-import { GoogleGenAI } from '@google/genai';
+/**
+ * Ultra-simple meme generator using Pollinations.ai
+ * Takes user prompt directly and generates image - no complexity!
+ */
 
 export interface MemeData {
   imageUrl: string;
   caption: string;
-  topText?: string;
-  bottomText?: string;
 }
 
 /**
- * MemeGenerator service - generates memes using Gemini's native image generation
+ * Generate a meme image from user's prompt
+ * @param userPrompt - What the user typed
+ * @returns Image as base64 data URL + caption
  */
-class MemeGenerator {
-  private geminiApiKey: string;
-  private ai: GoogleGenAI;
+export async function generateMeme(userPrompt: string): Promise<MemeData> {
+  try {
+    console.log('🎨 [MEME-GEN] Generating image for user prompt:', userPrompt);
 
-  constructor(geminiApiKey?: string) {
-    this.geminiApiKey = geminiApiKey || (process.env.GEMINI_API_KEY as string) || '';
-    this.ai = new GoogleGenAI({ apiKey: this.geminiApiKey });
-  }
+    // Use user's prompt directly for image generation
+    const imagePrompt = userPrompt;
 
-  /**
-   * Generate a meme based on user's message using Gemini's image generation
-   */
-  async generateMeme(userMessage: string, screenContext?: string): Promise<MemeData> {
-    try {
-      console.log('🎨 Generating meme with Gemini image generation for:', userMessage);
+    // Generate image with Pollinations.ai (free, no API key needed!)
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=1024&height=1024&model=flux&nologo=true`;
 
-      // Step 1: Analyze the message and create a meme image prompt
-      const memePromptData = await this.analyzeMemeContext(userMessage, screenContext);
+    console.log('📡 [MEME-GEN] Fetching from Pollinations.ai...');
+    const response = await fetch(pollinationsUrl);
 
-      // Step 2: Generate the meme image using Gemini's image generation
-      const imageDataUrl = await this.generateMemeImage(memePromptData.imagePrompt);
-
-      return {
-        imageUrl: imageDataUrl,
-        caption: memePromptData.caption,
-        topText: memePromptData.imagePrompt.substring(0, 50) + '...',
-        bottomText: undefined,
-      };
-    } catch (error) {
-      console.error('❌ Meme generation failed:', error);
-      throw new Error('Failed to generate meme. Please try again!');
+    if (!response.ok) {
+      throw new Error(`Pollinations.ai returned status ${response.status}`);
     }
-  }
 
-  /**
-   * Use Gemini to analyze the user's message and create a meme image prompt
-   */
-  private async analyzeMemeContext(
-    userMessage: string,
-    screenContext?: string
-  ): Promise<{
-    imagePrompt: string;
-    caption: string;
-  }> {
-    const analysisPrompt = `You are a hilarious meme expert and you're also a banana named CooBee! 🍌
+    // Get the image as a blob
+    const blob = await response.blob();
+    console.log('📦 [MEME-GEN] Received blob, size:', blob.size);
 
-User's message: "${userMessage}"
-${screenContext ? `Screen context: ${screenContext}` : ''}
-
-Your task is to create TWO things:
-
-1. IMAGE_PROMPT: A detailed prompt for generating a funny meme image that relates to the user's message. The prompt should:
-   - Describe a funny, relatable scenario or visual joke
-   - Include specific visual elements (characters, situations, expressions)
-   - Be suitable for meme format (funny, punchy, internet culture)
-   - Optionally include banana or fruit themes when it makes sense
-   - Include any text that should appear on the meme (like speech bubbles or captions)
-
-2. CAPTION: A short, funny comment from CooBee about this meme (max 1-2 sentences, banana-themed)
-
-Respond in EXACTLY this JSON format (no additional text):
-{
-  "imagePrompt": "Detailed description of the meme image to generate...",
-  "caption": "CooBee's funny comment about the meme"
-}
-
-Make it funny, relatable, and true to internet meme culture! 😄`;
-
-    try {
-      console.log('🎯 Analyzing meme context with Gemini...');
-
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
-        contents: analysisPrompt,
-      });
-
-      const text = response.text || '';
-      console.log('📝 Gemini analysis response:', text);
-
-      // Extract JSON from the response
-      let jsonText = text.trim();
-      if (jsonText.startsWith('```json')) {
-        jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      } else if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/```\n?/g, '');
-      }
-
-      const memeData = JSON.parse(jsonText);
-
-      return {
-        imagePrompt: memeData.imagePrompt || `A funny meme about: ${userMessage}`,
-        caption: memeData.caption || 'This meme is absolutely bananas! 🍌😄',
+    // Convert blob to base64 data URL
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        resolve(result);
       };
-    } catch (error) {
-      console.error('❌ Meme analysis failed:', error);
-      // Fallback prompt
-      return {
-        imagePrompt: `Create a funny internet meme image about: ${userMessage}. Include humorous text overlays and relatable visual elements in classic meme style.`,
-        caption: 'When life gives you questions, make banana memes! 🍌',
-      };
-    }
-  }
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
 
-  /**
-   * Generate a meme image using Gemini's image generation model
-   */
-  private async generateMemeImage(imagePrompt: string): Promise<string> {
-    try {
-      console.log('🎨 Generating meme image with prompt:', imagePrompt);
+    console.log('✅ [MEME-GEN] Image generated successfully! Base64 length:', base64.length);
 
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash-preview-image',
-        contents: imagePrompt,
-      });
-
-      console.log('✅ Gemini image generation response received');
-
-      // Extract the image data from the response
-      // The response structure has candidates[0].content.parts
-      if (response.candidates && response.candidates.length > 0) {
-        const content = response.candidates[0].content;
-
-        if (content && content.parts) {
-          for (const part of content.parts) {
-            if (part.inlineData && part.inlineData.data) {
-              const imageData = part.inlineData.data;
-              const mimeType = part.inlineData.mimeType || 'image/png';
-
-              // Convert base64 to data URL for browser display
-              const dataUrl = `data:${mimeType};base64,${imageData}`;
-
-              console.log('🖼️ Meme image generated successfully (base64 length:', imageData.length, ')');
-              return dataUrl;
-            }
-          }
-        }
-      }
-
-      throw new Error('No image data in Gemini response');
-    } catch (error) {
-      console.error('❌ Gemini image generation failed:', error);
-      throw error;
-    }
+    return {
+      imageUrl: base64,
+      caption: `Here's your image: "${userPrompt}" 🍌`,
+    };
+  } catch (error) {
+    console.error('❌ [MEME-GEN] Image generation failed:', error);
+    throw error;
   }
 }
-
-export default MemeGenerator;

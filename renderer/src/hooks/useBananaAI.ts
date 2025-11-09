@@ -6,7 +6,7 @@ export interface AIResponse {
   text: string;
   memeData?: {
     imageUrl: string;
-    caption: string;
+    // caption: string;
     topText?: string;
     bottomText?: string;
   };
@@ -98,13 +98,21 @@ export const useBananaAI = (): UseBananaAIResult => {
         // Handle both string responses and meme responses
         let aiResponse: AIResponse;
         if (typeof response === 'string') {
+          console.log('📝 [HOOK] Response is string type');
           aiResponse = { text: response };
         } else {
+          console.log('📝 [HOOK] Response is object type with memeData:', !!response.memeData);
           aiResponse = {
             text: response.text,
             memeData: response.memeData,
           };
         }
+
+        console.log('✅ [HOOK] Returning AIResponse:', {
+          hasText: !!aiResponse.text,
+          hasMemeData: !!aiResponse.memeData,
+          memeDataHasImageUrl: aiResponse.memeData?.imageUrl ? true : false,
+        });
 
         // Add assistant response to history (only text for conversation history)
         const assistantMessage: ConversationMessage = {
