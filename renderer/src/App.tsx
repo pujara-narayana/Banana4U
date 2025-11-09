@@ -258,14 +258,14 @@ const App: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/10 via-banana-500/8 to-amber-200/10 animate-gradient" />
       <div className="absolute inset-0 backdrop-blur-2xl" />
 
-        {/* Settings Panel */}
-        <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      {/* Settings Panel */}
+      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
-        {/* Main Content - Hide when settings are open */}
-        {!isSettingsOpen && (
-            <>
-              {/* Settings Button - Upper Left */}
-              <SettingsButton onClick={handleSettings} />
+      {/* Main Content - Hide when settings are open */}
+      {!isSettingsOpen && (
+        <>
+          {/* Settings Button - Upper Left */}
+          <SettingsButton onClick={handleSettings} />
 
           <div className="relative w-full h-full flex flex-col z-10">
             {/* Banana at top center */}
@@ -283,50 +283,39 @@ const App: React.FC = () => {
                 <div className="text-red-500 text-xs text-center mb-2 px-2">
                   {voiceError}
                 </div>
-
-                {/* Chat Messages Area */}
-                <div
-                    ref={chatContainerRef}
-                    className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth"
-                    style={{ scrollbarWidth: 'thin' }}
-                >
-                  {voiceError && (
-                      <div className="text-red-500 text-xs text-center mb-2 px-2">
-                        {voiceError}
+              )}
+              <div className="max-w-2xl mx-auto space-y-3">
+                {messages.map((message) => (
+                  <ChatBubble key={message.id} message={message} />
+                ))}
+                {isLoading && (
+                  <div className="flex justify-end mb-2">
+                    <div className="glass-bubble px-4 py-2 rounded-2xl rounded-br-sm">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
-                  )}
-                  <div className="max-w-2xl mx-auto space-y-3">
-                    {messages.map((message) => (
-                        <ChatBubble key={message.id} message={message} />
-                    ))}
-                    {isLoading && (
-                        <div className="flex justify-end mb-2">
-                          <div className="glass-bubble px-4 py-2 rounded-2xl rounded-br-sm">
-                            <div className="flex gap-1">
-                              <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                              <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                              <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                            </div>
-                          </div>
-                        </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-
-                {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
-                <div className="absolute bottom-4 left-0 right-0 px-4 z-20 pointer-events-none">
-                  <ChatInput
-                      onSendMessage={handleSendMessage}
-                      onVoiceInput={handleVoiceInput}
-                      onConversationalMode={handleConversationalMode}
-                      isListening={isListening}
-                      isConversationalMode={isConversationalMode}
-                  />
-                </div>
+                )}
               </div>
-            </>
-        )}
-      </div>
+            </div>
+
+            {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
+            <div className="absolute bottom-4 left-0 right-0 px-4 z-20 pointer-events-none">
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                onVoiceInput={handleVoiceInput}
+                onConversationalMode={handleConversationalMode}
+                isListening={isListening}
+                isConversationalMode={isConversationalMode}
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 
