@@ -235,8 +235,25 @@ const App: React.FC = () => {
     setIsSettingsOpen(true);
   };
 
+  // Fallback wheel scroll routing (helps when Electron transparent window or overlay blocks native bubbling)
+  useEffect(() => {
+    if (isSettingsOpen) return; // Don't hijack wheel while settings panel is open
+    const handleWheel = (e: WheelEvent) => {
+      if (!chatContainerRef.current) return;
+      // If the event target is outside the scroll area or the scroll area isn't the scrolling element, force scroll
+      const target = e.target as HTMLElement;
+      const withinChat = chatContainerRef.current.contains(target);
+      if (!withinChat || chatContainerRef.current === document.activeElement) {
+        // Apply delta manually
+        chatContainerRef.current.scrollTop += e.deltaY;
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [isSettingsOpen]);
+
   return (
-    <div className="w-full h-full relative overflow-hidden ios-glass-background">
+    <div className="w-full h-full relative ios-glass-background">
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/10 via-banana-500/8 to-amber-200/10 animate-gradient" />
       <div className="absolute inset-0 backdrop-blur-2xl" />
@@ -259,8 +276,8 @@ const App: React.FC = () => {
             {/* Chat Messages Area */}
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto px-4 pb-24 scroll-smooth"
-              style={{ scrollbarWidth: 'thin' }}
+              className="no-drag flex-1 overflow-y-scroll px-4 pb-24 overscroll-contain"
+              style={{ scrollbarWidth: 'thin', minHeight: 0, touchAction: 'pan-y' }}
             >
               {voiceError && (
                 <div className="text-red-500 text-xs text-center mb-2 px-2">
