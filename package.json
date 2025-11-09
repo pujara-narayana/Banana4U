@@ -57,6 +57,8 @@
     "object-hash": "^3.0.0",
     "postcss": "^8.4.32",
     "postcss-loader": "^7.3.0",
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.7.1",
     "style-loader": "^3.3.3",
     "tailwindcss": "^3.3.0",
     "ts-loader": "^9.5.0",

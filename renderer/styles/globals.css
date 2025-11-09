@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
   :root {
     --banana-yellow: #ffd60a;
     --banana-dark: #c99700;
@@ -11,9 +17,10 @@
 
   body {
     background: transparent !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-      "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-      "Helvetica Neue", sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+      sans-serif;
   }
 
   #root {
@@ -37,7 +44,8 @@
   .glass-bubble {
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37),
+    box-shadow:
+      0 8px 32px 0 rgba(31, 38, 135, 0.37),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   }
 
@@ -51,7 +59,8 @@
   .glass-input:focus {
     background: rgba(255, 237, 160, 0.25);
     border-color: rgba(255, 214, 10, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(255, 214, 10, 0.3),
+    box-shadow:
+      0 8px 32px 0 rgba(255, 214, 10, 0.3),
       0 0 0 3px rgba(255, 214, 10, 0.15);
   }
 
@@ -63,17 +72,19 @@
     border-radius: 16px;
   }
 
+  /* prettier-ignore */
   .banana-button {
-    @apply bg-banana-500 hover:bg-banana-600 text-black font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95;
+    @apply transform rounded-lg bg-banana-500 px-4 py-2 font-semibold text-black transition-all duration-200 hover:scale-105 hover:bg-banana-600 active:scale-95;
   }
 
   .chat-bubble {
-    @apply glass-effect p-3 rounded-2xl text-white text-sm max-w-xs;
+    @apply glass-effect max-w-xs rounded-2xl p-3 text-sm text-white;
     animation: fadeInUp 0.3s ease-out;
   }
 
+  /* prettier-ignore */
   .control-button {
-    @apply w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95;
+    @apply flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 active:scale-95;
   }
 }
 
@@ -125,9 +136,11 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }

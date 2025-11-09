@@ -6,9 +6,10 @@ import { UserSettings, PersonalityType } from '../../../shared/types';
 interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onShowWelcome: () => void;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, onShowWelcome }) => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'voice' | 'api'>('general');
 
@@ -106,6 +107,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                       <option value="chill">Chill</option>
                       <option value="meme">Meme</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-2">Navigation</label>
+                    <button
+                      onClick={onShowWelcome}
+                      className="w-full bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm border border-gray-600 focus:outline-none focus:border-yellow-400"
+                    >
+                      Show Welcome Screen
+                    </button>
                   </div>
                 </div>
               )}
@@ -249,4 +259,3 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
 };
 
 export default SettingsPanel;
-

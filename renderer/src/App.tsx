@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Banana from './components/Banana';
-import ChatBubble from './components/ChatBubble';
 import ChatInput from './components/ChatInput';
 import SettingsButton from './components/SettingsButton';
 import SettingsPanel from './components/SettingsPanel';
@@ -8,6 +7,8 @@ import { AnimationState, Message, PersonalityType } from '../../shared/types';
 import { useBananaAI } from './hooks/useBananaAI';
 import { useVoiceInput } from './hooks/useVoiceInput';
 import { useTextToSpeech } from './hooks/useTextToSpeech';
+import Welcome from './components/Welcome';
+import ChatView from './components/ChatView';
 
 const App: React.FC = () => {
   const [animationState, setAnimationState] = useState<AnimationState>('idle');
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [personality, setPersonality] = useState<PersonalityType>('default');
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
   const [bananaScale, setBananaScale] = useState(1);
 
   // Hooks
@@ -265,6 +267,11 @@ const App: React.FC = () => {
     setIsSettingsOpen(true);
   };
 
+  const handleShowWelcome = () => {
+    setIsSettingsOpen(false); // Close settings panel
+    setShowWelcome(true);
+  };
+
   // Fallback wheel scroll routing (helps when Electron transparent window or overlay blocks native bubbling)
   useEffect(() => {
     if (isSettingsOpen) return; // Don't hijack wheel while settings panel is open
@@ -282,6 +289,10 @@ const App: React.FC = () => {
     return () => window.removeEventListener('wheel', handleWheel);
   }, [isSettingsOpen]);
 
+  if (showWelcome) {
+    return <Welcome onContinue={() => setShowWelcome(false)} />;
+  }
+
   return (
     <div className="w-full h-full relative ios-glass-background">
       {/* Animated gradient background */}
@@ -289,7 +300,7 @@ const App: React.FC = () => {
       <div className="absolute inset-0 backdrop-blur-2xl" />
 
       {/* Settings Panel */}
-      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onShowWelcome={handleShowWelcome} />
 
       {/* Main Content - Hide when settings are open */}
       {!isSettingsOpen && (
@@ -314,33 +325,12 @@ const App: React.FC = () => {
               className="no-drag flex-1 overflow-y-scroll px-4 pb-24 overscroll-contain"
               style={{
                 scrollbarWidth: 'thin',
-                minHeight: 0,
                 touchAction: 'pan-y',
                 maskImage: 'linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)',
                 WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)',
               }}
             >
-              {voiceError && (
-                <div className="text-red-500 text-xs text-center mb-2 px-2">
-                  {voiceError}
-                </div>
-              )}
-              <div className="max-w-2xl mx-auto space-y-3">
-                {messages.map((message) => (
-                  <ChatBubble key={message.id} message={message} />
-                ))}
-                {isLoading && (
-                  <div className="flex justify-end mb-2">
-                    <div className="glass-bubble px-4 py-2 rounded-2xl rounded-br-sm">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ChatView messages={messages} isLoading={isLoading} voiceError={voiceError} />
             </div>
 
             {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
