@@ -91,7 +91,11 @@ const App: React.FC = () => {
     }
   }, [isListening, isLoading, isSpeaking]);
 
-  const handleSendMessage = async (messageText: string) => {
+  // Send a message to AI. Control speech via options.speakOutLoud or conversational mode
+  const handleSendMessage = async (
+    messageText: string,
+    options?: { speakOutLoud?: boolean }
+  ) => {
     if (!messageText.trim()) return;
 
     try {
@@ -122,8 +126,11 @@ const App: React.FC = () => {
       // Store AI response for voice filtering
       setLastAIResponse(response);
 
-      // Speak the response
-      speak(response);
+      // Speak only when explicitly requested (voice flows) or in conversational mode
+      const shouldSpeak = options?.speakOutLoud === true || isConversationalMode;
+      if (shouldSpeak) {
+        speak(response);
+      }
 
       // Clear screen context after use
       setCurrentScreenContext(null);
@@ -156,9 +163,9 @@ const App: React.FC = () => {
         return;
       }
 
-      // Voice input complete, send to AI
+      // Voice input complete, send to AI and speak back
       console.log('📝 Sending transcript to AI:', transcript);
-      handleSendMessage(transcript);
+      handleSendMessage(transcript, { speakOutLoud: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript, isListening]);
@@ -305,7 +312,8 @@ const App: React.FC = () => {
             {/* Chat Input at bottom - Positioned absolutely to not interfere with chat area scroll height */}
             <div className="absolute bottom-4 left-0 right-0 px-4 z-20 pointer-events-none">
               <ChatInput
-                onSendMessage={handleSendMessage}
+                // Typed questions: do NOT speak back
+                onSendMessage={(text) => handleSendMessage(text, { speakOutLoud: false })}
                 onVoiceInput={handleVoiceInput}
                 onConversationalMode={handleConversationalMode}
                 isListening={isListening}
