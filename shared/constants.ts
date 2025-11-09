@@ -42,6 +42,13 @@ export const IPC_CHANNELS = {
   AUDIO_STOP_RECORDING: "audio:stop-recording",
   AUDIO_PLAY_SOUND: "audio:play-sound",
 
+  // Text to Speech
+  TTS_GENERATE: "tts:generate",
+  TTS_PLAY_BASE64: "tts:play-base64",
+  TTS_GENERATE_FILE: "tts:generate-file",
+  TTS_PLAY_FILE: "tts:play-file",
+  TTS_STOP: "tts:stop",
+
   // Settings
   SETTINGS_GET: "settings:get",
   SETTINGS_SET: "settings:set",
@@ -52,30 +59,30 @@ export const IPC_CHANNELS = {
   HOTKEY_UNREGISTER: "hotkey:unregister",
 
   // System
-  GET_SYSTEM_INFO: 'system:get-info',
+  GET_SYSTEM_INFO: "system:get-info",
 
   // Authentication
-  AUTH_REGISTER: 'auth:register',
-  AUTH_LOGIN: 'auth:login',
-  AUTH_LOGOUT: 'auth:logout',
-  AUTH_GET_CURRENT_USER: 'auth:get-current-user',
-  AUTH_CHECK_USERNAME: 'auth:check-username',
-  AUTH_CHECK_EMAIL: 'auth:check-email',
+  AUTH_REGISTER: "auth:register",
+  AUTH_LOGIN: "auth:login",
+  AUTH_LOGOUT: "auth:logout",
+  AUTH_GET_CURRENT_USER: "auth:get-current-user",
+  AUTH_CHECK_USERNAME: "auth:check-username",
+  AUTH_CHECK_EMAIL: "auth:check-email",
 
   // User Profile
-  PROFILE_GET: 'profile:get',
-  PROFILE_UPDATE: 'profile:update',
+  PROFILE_GET: "profile:get",
+  PROFILE_UPDATE: "profile:update",
 
   // Conversations
-  CONVERSATION_CREATE: 'conversation:create',
-  CONVERSATION_GET: 'conversation:get',
-  CONVERSATION_LIST: 'conversation:list',
-  CONVERSATION_UPDATE: 'conversation:update',
-  CONVERSATION_DELETE: 'conversation:delete',
+  CONVERSATION_CREATE: "conversation:create",
+  CONVERSATION_GET: "conversation:get",
+  CONVERSATION_LIST: "conversation:list",
+  CONVERSATION_UPDATE: "conversation:update",
+  CONVERSATION_DELETE: "conversation:delete",
 
   // Messages
-  MESSAGE_ADD: 'message:add',
-  MESSAGE_GET_ALL: 'message:get-all',
+  MESSAGE_ADD: "message:add",
+  MESSAGE_GET_ALL: "message:get-all",
 };
 
 // Animation States

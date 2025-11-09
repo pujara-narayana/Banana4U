@@ -70,27 +70,38 @@ export const useVoiceInput = (): UseVoiceInputResult => {
       if (stopSpeakingCallbackRef.current) {
         stopSpeakingCallbackRef.current();
       }
-      
+
       setTranscript("");
+      // Mark document state so TTS hook can skip playback
+      if (typeof document !== "undefined") {
+        document.body.dataset.recording = "true";
+      }
       setError(null);
       audioChunksRef.current = [];
 
       console.log("🎤 Requesting microphone (NOT system audio)...");
-      
+
       // Get list of devices and find actual microphone (not system audio)
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = devices.filter(device => device.kind === 'audioinput');
-      console.log("🎤 Available audio inputs:", audioInputs.map(d => d.label));
-      
+      const audioInputs = devices.filter(
+        (device) => device.kind === "audioinput"
+      );
+      console.log(
+        "🎤 Available audio inputs:",
+        audioInputs.map((d) => d.label)
+      );
+
       // Request ONLY microphone input, explicitly NOT system audio
       const constraints = await getMicrophoneConstraints();
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
       // Verify we got a microphone track, not system audio
       if (!verifyMicrophoneTrack(stream)) {
-        stream.getTracks().forEach(t => t.stop());
+        stream.getTracks().forEach((t) => t.stop());
         setError("System audio device detected - please select a microphone");
-        alert("❌ System audio detected! Please select a physical microphone, not system audio/loopback device.");
+        alert(
+          "❌ System audio detected! Please select a physical microphone, not system audio/loopback device."
+        );
         return;
       }
 
@@ -112,7 +123,7 @@ export const useVoiceInput = (): UseVoiceInputResult => {
         }
       }
 
-      const mediaRecorder = new MediaRecorder(stream, { 
+      const mediaRecorder = new MediaRecorder(stream, {
         mimeType,
         audioBitsPerSecond: 128000, // 128 kbps for better quality
       });
@@ -125,11 +136,14 @@ export const useVoiceInput = (): UseVoiceInputResult => {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         stream.getTracks().forEach((track) => track.stop());
         if (audioBlob.size > 0) await transcribeWithGemini(audioBlob, apiKey);
-        
+
         // UNMUTE TTS after recording
         console.log("🔊 Unmuting TTS after voice input...");
         if (unmuteSpeakingCallbackRef.current) {
           unmuteSpeakingCallbackRef.current();
+        }
+        if (typeof document !== "undefined") {
+          delete document.body.dataset.recording;
         }
       };
 
@@ -144,7 +158,7 @@ export const useVoiceInput = (): UseVoiceInputResult => {
           : "Failed to access microphone";
       setError(message);
       alert(message);
-      
+
       // UNMUTE TTS if error occurs
       if (unmuteSpeakingCallbackRef.current) {
         unmuteSpeakingCallbackRef.current();
@@ -156,6 +170,9 @@ export const useVoiceInput = (): UseVoiceInputResult => {
     if (mediaRecorderRef.current && isListening) {
       mediaRecorderRef.current.stop();
       setIsListening(false);
+      if (typeof document !== "undefined") {
+        delete document.body.dataset.recording;
+      }
     }
   }, [isListening]);
 
@@ -171,7 +188,9 @@ export const useVoiceInput = (): UseVoiceInputResult => {
       if (audioBlob.size > 20 * 1024 * 1024) {
         console.warn("⚠️ Audio too large:", audioBlob.size);
         setError("Audio too large");
-        setTranscript("Oops! The audio recording is too large. Please speak more concisely! 🍌");
+        setTranscript(
+          "Oops! The audio recording is too large. Please speak more concisely! 🍌"
+        );
         return;
       }
 
@@ -195,16 +214,16 @@ export const useVoiceInput = (): UseVoiceInputResult => {
                   text: "Listen to this audio carefully. This recording may contain TWO voices: (1) An AI assistant speaking, and (2) A human user speaking. Your task is to transcribe ONLY what the HUMAN USER said. IGNORE and DO NOT transcribe the AI assistant's voice. If you only hear the AI assistant and no human speech, return an empty response. Return ONLY the human user's spoken words, nothing else.",
                 },
                 {
-                  inline_data: { 
-                    mime_type: audioBlob.type, 
+                  inline_data: {
+                    mime_type: audioBlob.type,
                     data: base64Data,
                   },
                 },
               ],
             },
           ],
-          generationConfig: { 
-            temperature: 0.1, 
+          generationConfig: {
+            temperature: 0.1,
             maxOutputTokens: 1000,
             topP: 0.95,
           },
@@ -213,19 +232,27 @@ export const useVoiceInput = (): UseVoiceInputResult => {
       );
 
       console.log("📦 Gemini response status:", response.status);
-      console.log("📦 Gemini response:", JSON.stringify(response.data, null, 2));
+      console.log(
+        "📦 Gemini response:",
+        JSON.stringify(response.data, null, 2)
+      );
 
       if (response.data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        const rawText = response.data.candidates[0].content.parts[0].text.trim();
+        const rawText =
+          response.data.candidates[0].content.parts[0].text.trim();
         console.log("✅ Raw transcribed:", rawText);
-        
+
         // FILTER OUT AI's voice from the transcript
         const filteredText = filterAIVoiceFromTranscript(rawText);
-        
+
         if (!filteredText || filteredText.length < 3) {
-          console.warn("⚠️ Filtered transcript is empty or too short - user might not have spoken");
+          console.warn(
+            "⚠️ Filtered transcript is empty or too short - user might not have spoken"
+          );
           setError("Only AI voice detected - please speak after AI finishes");
-          setTranscript("⚠️ Only heard the AI's voice. Please wait for AI to finish speaking, then try again! 🍌");
+          setTranscript(
+            "⚠️ Only heard the AI's voice. Please wait for AI to finish speaking, then try again! 🍌"
+          );
         } else {
           console.log("✅ Final transcript (after filtering):", filteredText);
           setTranscript(filteredText);
@@ -234,11 +261,15 @@ export const useVoiceInput = (): UseVoiceInputResult => {
       } else if (response.data.candidates?.[0]?.finishReason === "SAFETY") {
         console.error("❌ Blocked by safety filters");
         setError("Content blocked by safety filters");
-        setTranscript("Oops! The content was blocked by safety filters. Please try again! 🍌");
+        setTranscript(
+          "Oops! The content was blocked by safety filters. Please try again! 🍌"
+        );
       } else {
         console.error("❌ No text in response:", response.data);
         setError("No transcription returned");
-        setTranscript("Oops! Looks like we're having trouble understanding the audio. Please speak clearly and try again! 🍌");
+        setTranscript(
+          "Oops! Looks like we're having trouble understanding the audio. Please speak clearly and try again! 🍌"
+        );
       }
     } catch (err: any) {
       console.error("❌ Transcription error:", err);
@@ -248,27 +279,33 @@ export const useVoiceInput = (): UseVoiceInputResult => {
         status: err.response?.status,
         code: err.code,
       });
-      
+
       let errorMessage = "Transcription failed";
-      let userMessage = "Oops! Looks like we're having troubles with transcription.";
-      
+      let userMessage =
+        "Oops! Looks like we're having troubles with transcription.";
+
       if (err.response?.status === 400) {
         errorMessage = "Audio format not supported by Gemini";
-        userMessage = "Oops! Your browser's audio format isn't supported. Try using Chrome or Edge! 🍌";
+        userMessage =
+          "Oops! Your browser's audio format isn't supported. Try using Chrome or Edge! 🍌";
       } else if (err.response?.status === 429) {
         errorMessage = "API rate limit reached";
-        userMessage = "Oops! Too many requests. Please wait a moment and try again! 🍌";
+        userMessage =
+          "Oops! Too many requests. Please wait a moment and try again! 🍌";
       } else if (err.response?.status === 403) {
         errorMessage = "API key invalid or expired";
-        userMessage = "Oops! There's an issue with the API key. Please check the configuration! 🍌";
+        userMessage =
+          "Oops! There's an issue with the API key. Please check the configuration! 🍌";
       } else if (err.code === "ECONNABORTED") {
         errorMessage = "Request timeout";
-        userMessage = "Oops! The transcription is taking too long. Please try with shorter audio! 🍌";
+        userMessage =
+          "Oops! The transcription is taking too long. Please try with shorter audio! 🍌";
       } else if (err.message.includes("Network")) {
         errorMessage = "Network error";
-        userMessage = "Oops! Network connection issue. Please check your internet! 🍌";
+        userMessage =
+          "Oops! Network connection issue. Please check your internet! 🍌";
       }
-      
+
       setError(errorMessage);
       setTranscript(userMessage + " Error: " + errorMessage);
     }
@@ -288,7 +325,10 @@ export const useVoiceInput = (): UseVoiceInputResult => {
   // Function to store last AI response for filtering
   const setLastAIResponse = (response: string) => {
     lastAIResponseRef.current = response;
-    console.log("💾 Stored AI response for filtering:", response.substring(0, 50) + "...");
+    console.log(
+      "💾 Stored AI response for filtering:",
+      response.substring(0, 50) + "..."
+    );
   };
 
   // Function to filter out AI's voice from transcription
@@ -299,13 +339,17 @@ export const useVoiceInput = (): UseVoiceInputResult => {
 
     console.log("🔍 Filtering transcript...");
     console.log("📝 Raw transcript:", rawTranscript);
-    console.log("🤖 Last AI response:", lastAIResponseRef.current.substring(0, 100));
+    console.log(
+      "🤖 Last AI response:",
+      lastAIResponseRef.current.substring(0, 100)
+    );
 
     // Clean and normalize text for comparison
-    const normalize = (text: string) => 
-      text.toLowerCase()
-        .replace(/[^\w\s]/g, '') // Remove punctuation
-        .replace(/\s+/g, ' ')     // Normalize spaces
+    const normalize = (text: string) =>
+      text
+        .toLowerCase()
+        .replace(/[^\w\s]/g, "") // Remove punctuation
+        .replace(/\s+/g, " ") // Normalize spaces
         .trim();
 
     const normalizedTranscript = normalize(rawTranscript);
@@ -316,30 +360,41 @@ export const useVoiceInput = (): UseVoiceInputResult => {
     const aiParts = lastAIResponseRef.current.split(/[.!?]\s+/);
 
     // Filter out parts that match AI response
-    const filteredParts = transcriptParts.filter(part => {
+    const filteredParts = transcriptParts.filter((part) => {
       const normalizedPart = normalize(part);
-      
+
       // Skip empty parts
       if (!normalizedPart) return false;
 
       // Check if this part appears in AI response
-      const isAISpeech = aiParts.some(aiPart => {
+      const isAISpeech = aiParts.some((aiPart) => {
         const normalizedAIPart = normalize(aiPart);
-        
+
         // Check for exact match or substring match
         if (normalizedPart === normalizedAIPart) return true;
-        if (normalizedAIPart.includes(normalizedPart) && normalizedPart.length > 10) return true;
-        if (normalizedPart.includes(normalizedAIPart) && normalizedAIPart.length > 10) return true;
-        
+        if (
+          normalizedAIPart.includes(normalizedPart) &&
+          normalizedPart.length > 10
+        )
+          return true;
+        if (
+          normalizedPart.includes(normalizedAIPart) &&
+          normalizedAIPart.length > 10
+        )
+          return true;
+
         // Check similarity (Levenshtein-like)
-        const similarity = calculateSimilarity(normalizedPart, normalizedAIPart);
+        const similarity = calculateSimilarity(
+          normalizedPart,
+          normalizedAIPart
+        );
         return similarity > 0.8; // 80% similar = likely AI voice
       });
 
       return !isAISpeech;
     });
 
-    const filteredTranscript = filteredParts.join('. ').trim();
+    const filteredTranscript = filteredParts.join(". ").trim();
 
     if (filteredTranscript !== rawTranscript) {
       console.log("✂️ FILTERED OUT AI speech");
@@ -356,9 +411,9 @@ export const useVoiceInput = (): UseVoiceInputResult => {
   const calculateSimilarity = (str1: string, str2: string): number => {
     const longer = str1.length > str2.length ? str1 : str2;
     const shorter = str1.length > str2.length ? str2 : str1;
-    
+
     if (longer.length === 0) return 1.0;
-    
+
     const editDistance = levenshteinDistance(longer, shorter);
     return (longer.length - editDistance) / longer.length;
   };
@@ -393,72 +448,83 @@ export const useVoiceInput = (): UseVoiceInputResult => {
   };
 
   // Helper function to get microphone constraints that exclude system audio
-  const getMicrophoneConstraints = async (): Promise<MediaStreamConstraints> => {
-    // Enumerate devices to find real microphones only
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const audioInputs = devices.filter(device => device.kind === 'audioinput');
-    
-    console.log('🎤 All audio input devices:', audioInputs.map(d => ({
-      id: d.deviceId,
-      label: d.label,
-      groupId: d.groupId,
-    })));
-    
-    // Filter out system audio devices
-    const systemAudioKeywords = [
-      'loopback',
-      'stereo mix',
-      'system audio',
-      'what u hear',
-      'wave out',
-      'speakers',
-      'output',
-      'soundflower',
-      'blackhole',
-      'virtual audio',
-      'voicemeeter',
-      'vb-audio',
-      'system sound',
-    ];
-    
-    const realMicrophones = audioInputs.filter(device => {
-      const label = device.label.toLowerCase();
-      const isSystemAudio = systemAudioKeywords.some(keyword => label.includes(keyword));
-      return !isSystemAudio;
-    });
-    
-    console.log('✅ Real microphones only:', realMicrophones.map(d => d.label));
-    
-    // If we found real microphones, prefer the first one
-    let deviceId: string | undefined;
-    if (realMicrophones.length > 0) {
-      deviceId = realMicrophones[0].deviceId;
-      console.log('🎤 Using device:', realMicrophones[0].label);
-    } else {
-      console.warn('⚠️ No real microphones found, using default');
-    }
-    
-    return {
-      audio: {
-        deviceId: deviceId ? { exact: deviceId } : undefined,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        channelCount: 1,
-        sampleRate: 16000,
-        // Explicitly exclude system audio with vendor-specific constraints
-        // @ts-ignore - These are browser-specific but important for preventing system audio capture
-        googEchoCancellation: true,
-        googAutoGainControl: true,
-        googNoiseSuppression: true,
-        googHighpassFilter: true,
-        // Only allow microphone devices
-        // @ts-ignore
-        mediaSource: 'microphone',
-      },
-      video: false,
+  const getMicrophoneConstraints =
+    async (): Promise<MediaStreamConstraints> => {
+      // Enumerate devices to find real microphones only
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(
+        (device) => device.kind === "audioinput"
+      );
+
+      console.log(
+        "🎤 All audio input devices:",
+        audioInputs.map((d) => ({
+          id: d.deviceId,
+          label: d.label,
+          groupId: d.groupId,
+        }))
+      );
+
+      // Filter out system audio devices
+      const systemAudioKeywords = [
+        "loopback",
+        "stereo mix",
+        "system audio",
+        "what u hear",
+        "wave out",
+        "speakers",
+        "output",
+        "soundflower",
+        "blackhole",
+        "virtual audio",
+        "voicemeeter",
+        "vb-audio",
+        "system sound",
+      ];
+
+      const realMicrophones = audioInputs.filter((device) => {
+        const label = device.label.toLowerCase();
+        const isSystemAudio = systemAudioKeywords.some((keyword) =>
+          label.includes(keyword)
+        );
+        return !isSystemAudio;
+      });
+
+      console.log(
+        "✅ Real microphones only:",
+        realMicrophones.map((d) => d.label)
+      );
+
+      // If we found real microphones, prefer the first one
+      let deviceId: string | undefined;
+      if (realMicrophones.length > 0) {
+        deviceId = realMicrophones[0].deviceId;
+        console.log("🎤 Using device:", realMicrophones[0].label);
+      } else {
+        console.warn("⚠️ No real microphones found, using default");
+      }
+
+      return {
+        audio: {
+          deviceId: deviceId ? { exact: deviceId } : undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 16000,
+          // Explicitly exclude system audio with vendor-specific constraints
+          // @ts-ignore - These are browser-specific but important for preventing system audio capture
+          googEchoCancellation: true,
+          googAutoGainControl: true,
+          googNoiseSuppression: true,
+          googHighpassFilter: true,
+          // Only allow microphone devices
+          // @ts-ignore
+          mediaSource: "microphone",
+        },
+        video: false,
+      };
     };
-  };
 
   // Helper function to verify audio track is from microphone, not system audio
   const verifyMicrophoneTrack = (stream: MediaStream): boolean => {
@@ -479,24 +545,24 @@ export const useVoiceInput = (): UseVoiceInputResult => {
 
     // Extended list of system audio indicators
     const systemAudioKeywords = [
-      'loopback',
-      'stereo mix',
-      'system audio',
-      'what u hear',
-      'wave out',
-      'speakers',
-      'output',
-      'soundflower',
-      'blackhole',
-      'virtual audio',
-      'voicemeeter',
-      'vb-audio',
-      'system sound',
-      'desktop audio',
-      'monitor of',
-      'virtual device',
-      'audio router',
-      'vac', // Virtual Audio Cable
+      "loopback",
+      "stereo mix",
+      "system audio",
+      "what u hear",
+      "wave out",
+      "speakers",
+      "output",
+      "soundflower",
+      "blackhole",
+      "virtual audio",
+      "voicemeeter",
+      "vb-audio",
+      "system sound",
+      "desktop audio",
+      "monitor of",
+      "virtual device",
+      "audio router",
+      "vac", // Virtual Audio Cable
     ];
 
     const label = track.label.toLowerCase();
@@ -512,50 +578,55 @@ export const useVoiceInput = (): UseVoiceInputResult => {
   };
 
   // Conversational Mode Functions
-  const detectVoiceActivity = useCallback(async (stream: MediaStream): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const audioContext = new AudioContext();
-      const analyser = audioContext.createAnalyser();
-      const microphone = audioContext.createMediaStreamSource(stream);
-      
-      analyser.fftSize = 512;
-      microphone.connect(analyser);
-      
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      
-      let silenceStart = Date.now();
-      const SILENCE_THRESHOLD = 30; // Adjust sensitivity
-      const SILENCE_DURATION = 1500; // 1.5 seconds of silence
-      const VOICE_THRESHOLD = 50; // Threshold for detecting voice
-      
-      const checkAudio = () => {
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-        
-        if (average > VOICE_THRESHOLD) {
-          // Voice detected, reset silence timer
-          silenceStart = Date.now();
-        } else if (average < SILENCE_THRESHOLD) {
-          // Check if silence duration exceeded
-          if (Date.now() - silenceStart > SILENCE_DURATION) {
-            audioContext.close();
-            resolve(false); // Silence detected, stop recording
-            return;
+  const detectVoiceActivity = useCallback(
+    async (stream: MediaStream): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const audioContext = new AudioContext();
+        const analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(stream);
+
+        analyser.fftSize = 512;
+        microphone.connect(analyser);
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        let silenceStart = Date.now();
+        const SILENCE_THRESHOLD = 30; // Adjust sensitivity
+        const SILENCE_DURATION = 1500; // 1.5 seconds of silence
+        const VOICE_THRESHOLD = 50; // Threshold for detecting voice
+
+        const checkAudio = () => {
+          analyser.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+
+          if (average > VOICE_THRESHOLD) {
+            // Voice detected, reset silence timer
+            silenceStart = Date.now();
+          } else if (average < SILENCE_THRESHOLD) {
+            // Check if silence duration exceeded
+            if (Date.now() - silenceStart > SILENCE_DURATION) {
+              audioContext.close();
+              resolve(false); // Silence detected, stop recording
+              return;
+            }
           }
-        }
-        
-        requestAnimationFrame(checkAudio);
-      };
-      
-      checkAudio();
-    });
-  }, []);
+
+          requestAnimationFrame(checkAudio);
+        };
+
+        checkAudio();
+      });
+    },
+    []
+  );
 
   const startConversationalMode = useCallback(async () => {
     if (!isSupported) {
       setError("MediaRecorder not supported");
-      alert("Audio recording not supported. Please use Chrome, Edge, or Safari.");
+      alert(
+        "Audio recording not supported. Please use Chrome, Edge, or Safari."
+      );
       return;
     }
 
@@ -569,7 +640,7 @@ export const useVoiceInput = (): UseVoiceInputResult => {
     setIsConversationalMode(true);
     conversationalModeRef.current = true;
     console.log("🎙️ Conversational mode started");
-    
+
     // Start the continuous listening loop
     listenContinuously(apiKey);
   }, [isSupported]);
@@ -582,24 +653,24 @@ export const useVoiceInput = (): UseVoiceInputResult => {
         if (muteSpeakingCallbackRef.current) {
           muteSpeakingCallbackRef.current();
         }
-        
+
         // FORCE STOP any TTS audio that's playing
         console.log("🔇 Force stopping any active TTS...");
         if (stopSpeakingCallbackRef.current) {
           stopSpeakingCallbackRef.current();
         }
-        
+
         // Wait for TTS to finish stopping
         console.log("⏳ Ensuring TTS is completely stopped...");
         let waitCount = 0;
         while (isSpeakingCallbackRef.current?.() === true && waitCount < 50) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           waitCount++;
         }
-        
+
         // Extra delay to ensure all audio is silent
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
         console.log("🎤 Ready to listen (TTS is MUTED and STOPPED)");
         setTranscript("");
         setError(null);
@@ -607,8 +678,18 @@ export const useVoiceInput = (): UseVoiceInputResult => {
 
         // Get list of devices and ensure we're using microphone only
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioInputs = devices.filter(device => device.kind === 'audioinput');
-        console.log("🎤 Available audio inputs:", audioInputs.map(d => d.label));
+        const audioInputs = devices.filter(
+          (device) => device.kind === "audioinput"
+        );
+        console.log(
+          "🎤 Available audio inputs:",
+          audioInputs.map((d) => d.label)
+        );
+
+        // Mark document as recording so TTS will not play while mic is hot
+        if (typeof document !== "undefined") {
+          document.body.dataset.recording = "true";
+        }
 
         // Get microphone stream - ONLY microphone, NOT system audio
         const constraints = await getMicrophoneConstraints();
@@ -618,11 +699,13 @@ export const useVoiceInput = (): UseVoiceInputResult => {
 
         // Verify we got a microphone track, not system audio
         if (!verifyMicrophoneTrack(stream)) {
-          stream.getTracks().forEach(t => t.stop());
+          stream.getTracks().forEach((t) => t.stop());
           conversationalModeRef.current = false;
           setIsConversationalMode(false);
           setError("System audio device detected - please select a microphone");
-          alert("❌ System audio detected! Please select a physical microphone, not system audio/loopback device.");
+          alert(
+            "❌ System audio detected! Please select a physical microphone, not system audio/loopback device."
+          );
           break;
         }
 
@@ -645,7 +728,7 @@ export const useVoiceInput = (): UseVoiceInputResult => {
 
         console.log("🎤 Using audio format:", mimeType);
 
-        const mediaRecorder = new MediaRecorder(stream, { 
+        const mediaRecorder = new MediaRecorder(stream, {
           mimeType,
           audioBitsPerSecond: 128000,
         });
@@ -657,13 +740,13 @@ export const useVoiceInput = (): UseVoiceInputResult => {
         const analyser = audioContext.createAnalyser();
         analyserRef.current = analyser;
         const microphone = audioContext.createMediaStreamSource(stream);
-        
+
         analyser.fftSize = 512;
         microphone.connect(analyser);
-        
+
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
-        
+
         let voiceDetected = false;
         let silenceStart = 0;
         const SILENCE_THRESHOLD = 30;
@@ -680,7 +763,7 @@ export const useVoiceInput = (): UseVoiceInputResult => {
 
             analyser.getByteFrequencyData(dataArray);
             const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-            
+
             if (average > VOICE_THRESHOLD) {
               voiceDetected = true;
               silenceStart = Date.now();
@@ -713,7 +796,7 @@ export const useVoiceInput = (): UseVoiceInputResult => {
 
             analyser.getByteFrequencyData(dataArray);
             const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-            
+
             if (average > VOICE_THRESHOLD) {
               silenceStart = Date.now();
             } else if (average < SILENCE_THRESHOLD) {
@@ -722,7 +805,7 @@ export const useVoiceInput = (): UseVoiceInputResult => {
                 return;
               }
             }
-            
+
             requestAnimationFrame(checkSilence);
           };
           checkSilence();
@@ -733,63 +816,83 @@ export const useVoiceInput = (): UseVoiceInputResult => {
           mediaRecorder.stop();
         }
         setIsListening(false);
-        
+
         // Wait for recording to finish processing
         await new Promise<void>((resolve) => {
           mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+            const audioBlob = new Blob(audioChunksRef.current, {
+              type: mimeType,
+            });
             stream.getTracks().forEach((track) => track.stop());
-            
+
             if (audioContext) {
               audioContext.close();
             }
-            
+
             if (audioBlob.size > 0 && conversationalModeRef.current) {
               await transcribeWithGemini(audioBlob, apiKey);
             }
-            
+
             // UNMUTE TTS so AI can respond
             console.log("🔊 Unmuting TTS for AI response...");
             if (unmuteSpeakingCallbackRef.current) {
               unmuteSpeakingCallbackRef.current();
             }
-            
+            // Clear recording flag now that capture ended
+            if (typeof document !== "undefined") {
+              delete (document.body.dataset as any).recording;
+            }
+
+            // Half-duplex: wait for TTS to finish before next listen cycle starts
+            if (isSpeakingCallbackRef.current) {
+              let tries = 0;
+              // Wait up to ~30s (600 * 50ms)
+              while (isSpeakingCallbackRef.current() === true && tries < 600) {
+                await new Promise((r) => setTimeout(r, 50));
+                tries++;
+              }
+              // Small extra delay to let OS audio tail off
+              await new Promise((r) => setTimeout(r, 200));
+            }
+
             resolve();
           };
         });
 
         // No need to wait here - we'll mute again at the start of the next loop
-
       } catch (err: any) {
         console.error("❌ Conversational mode error:", err);
         if (conversationalModeRef.current) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
     }
-    
+
     console.log("🎙️ Conversational mode stopped");
   };
 
   const stopConversationalMode = useCallback(() => {
     conversationalModeRef.current = false;
     setIsConversationalMode(false);
-    
+
     // Clean up any active recording
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state === "recording"
+    ) {
       mediaRecorderRef.current.stop();
     }
-    
+
     // Clean up audio context
     if (audioContextRef.current) {
       audioContextRef.current.close();
     }
-    
+
     // Stop media stream
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
     }
-    
+
     setIsListening(false);
     console.log("🎙️ Conversational mode stopped by user");
   }, []);

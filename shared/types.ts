@@ -1,20 +1,26 @@
 export type AnimationState =
-  | 'idle'
-  | 'listening'
-  | 'thinking'
-  | 'speaking'
-  | 'happy'
-  | 'confused'
-  | 'excited'
-  | 'sleeping';
+  | "idle"
+  | "listening"
+  | "thinking"
+  | "speaking"
+  | "happy"
+  | "confused"
+  | "excited"
+  | "sleeping";
 
-export type PersonalityType = 'default' | 'study' | 'hype' | 'chill' | 'code' | 'meme';
+export type PersonalityType =
+  | "default"
+  | "study"
+  | "hype"
+  | "chill"
+  | "code"
+  | "meme";
 
-export type BananaLevel = 'green' | 'yellow' | 'spotted' | 'golden';
+export type BananaLevel = "green" | "yellow" | "spotted" | "golden";
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
   screenContext?: ScreenContext;
@@ -24,14 +30,14 @@ export interface ScreenContext {
   text?: string;
   image?: string; // base64
   timestamp: Date;
-  source: 'full' | 'active' | 'region';
+  source: "full" | "active" | "region";
 }
 
 export interface UserSettings {
   // General
   startOnBoot: boolean;
   language: string;
-  theme: 'light' | 'dark' | 'auto';
+  theme: "light" | "dark" | "auto";
 
   // Privacy
   allowScreenCapture: boolean;
@@ -54,7 +60,7 @@ export interface UserSettings {
   pomodoroWorkDuration: number;
   pomodoroShortBreak: number;
   pomodoroLongBreak: number;
-  proactiveLevel: 'low' | 'medium' | 'high' | 'off';
+  proactiveLevel: "low" | "medium" | "high" | "off";
 
   // Hotkeys
   hotkeys: {
@@ -112,7 +118,7 @@ export interface QuickAction {
 
 export interface PomodoroSession {
   id: string;
-  type: 'work' | 'short-break' | 'long-break';
+  type: "work" | "short-break" | "long-break";
   duration: number;
   startTime: Date;
   endTime?: Date;
@@ -170,16 +176,29 @@ export interface ElectronAPI {
   setOpacity: (opacity: number) => void;
 
   // Screen capture
-  captureScreen: (mode: 'full' | 'active' | 'region', excludeBanana4U?: boolean) => Promise<ScreenContext>;
+  captureScreen: (
+    mode: "full" | "active" | "region",
+    excludeBanana4U?: boolean
+  ) => Promise<ScreenContext>;
 
   // Audio
   startAudioRecording: () => Promise<void>;
   stopAudioRecording: () => Promise<Blob>;
   playSound: (soundName: string) => void;
 
+  // Text to Speech
+  generateTTS: (text: string) => Promise<string>; // Returns base64 encoded audio
+  playTTSBase64: (base64Audio: string) => Promise<void>; // Plays base64 MP3 via main process
+  generateTTSFile: (text: string) => Promise<string>; // Returns temp file path to MP3
+  playTTSFile: (filePath: string) => Promise<void>; // Plays MP3 by file path
+  stopTTSPlayback: () => Promise<void>; // Stops any active TTS playback
+
   // Settings
   getSettings: () => Promise<UserSettings>;
-  setSetting: <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => Promise<void>;
+  setSetting: <K extends keyof UserSettings>(
+    key: K,
+    value: UserSettings[K]
+  ) => Promise<void>;
   resetSettings: () => Promise<void>;
 
   // Hotkeys
@@ -210,17 +229,34 @@ export interface ElectronAPI {
 
   // User Profile
   getProfile: (userId: string) => Promise<IPCResponse<UserProfile>>;
-  updateProfile: (userId: string, updates: Partial<UserProfile>) => Promise<IPCResponse<void>>;
+  updateProfile: (
+    userId: string,
+    updates: Partial<UserProfile>
+  ) => Promise<IPCResponse<void>>;
 
   // Conversations
-  createConversation: (userId: string, personality?: string) => Promise<IPCResponse<string>>;
-  getConversation: (conversationId: string) => Promise<IPCResponse<ConversationHistory>>;
-  listConversations: (userId: string, limit?: number) => Promise<IPCResponse<ConversationHistory[]>>;
-  updateConversation: (conversationId: string, updates: { title?: string }) => Promise<IPCResponse<void>>;
+  createConversation: (
+    userId: string,
+    personality?: string
+  ) => Promise<IPCResponse<string>>;
+  getConversation: (
+    conversationId: string
+  ) => Promise<IPCResponse<ConversationHistory>>;
+  listConversations: (
+    userId: string,
+    limit?: number
+  ) => Promise<IPCResponse<ConversationHistory[]>>;
+  updateConversation: (
+    conversationId: string,
+    updates: { title?: string }
+  ) => Promise<IPCResponse<void>>;
   deleteConversation: (conversationId: string) => Promise<IPCResponse<void>>;
 
   // Messages
-  addMessage: (conversationId: string, message: Message) => Promise<IPCResponse<void>>;
+  addMessage: (
+    conversationId: string,
+    message: Message
+  ) => Promise<IPCResponse<void>>;
   getMessages: (conversationId: string) => Promise<IPCResponse<Message[]>>;
 }
 

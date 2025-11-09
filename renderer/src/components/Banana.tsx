@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AnimationState, PersonalityType } from '../../../shared/types';
-import bananaImage from '../../../images/coolbanana.png';
-import studyBananaImage from '../../../images/studybanana.png';
-import hypeBananaImage from '../../../images/hypebanana.png';
-import chillBananaImage from '../../../images/chillbanana.png';
-import memeBananaImage from '../../../images/memebanana-removebg-preview.png';
-import talkingBananaSprite from '../../../images/defaultbanana_talking.png';
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { AnimationState, PersonalityType } from "../../../shared/types";
+import bananaImage from "../../../images/coolbanana.png";
+import studyBananaImage from "../../../images/studybanana.png";
+import hypeBananaImage from "../../../images/hypebanana.png";
+import chillBananaImage from "../../../images/chillbanana.png";
+import memeBananaImage from "../../../images/memebanana-removebg-preview.png";
+import talkingBananaSprite from "../../../images/defaultbanana_talking.png";
 
 interface BananaProps {
   state: AnimationState;
   personality?: PersonalityType;
 }
 
-const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
+const Banana: React.FC<BananaProps> = ({ state, personality = "default" }) => {
   const [currentFrame, setCurrentFrame] = useState(0);
   const animationFrameRef = useRef<number>();
   const lastFrameTimeRef = useRef<number>(0);
-  
+
   // Sprite animation configuration
   const TOTAL_FRAMES = 36;
   const FRAME_DURATION = 1000 / 24; // 24 FPS
@@ -26,47 +26,44 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
 
   // Animate sprite frames when speaking
   useEffect(() => {
-    if (state === 'speaking') {
-      const animate = (timestamp: number) => {
-        if (!lastFrameTimeRef.current) {
-          lastFrameTimeRef.current = timestamp;
-        }
-
-        const elapsed = timestamp - lastFrameTimeRef.current;
-
-        if (elapsed >= FRAME_DURATION) {
-          setCurrentFrame((prev) => (prev + 1) % TOTAL_FRAMES);
-          lastFrameTimeRef.current = timestamp;
-        }
-
-        animationFrameRef.current = requestAnimationFrame(animate);
-      };
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-
-      return () => {
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-        lastFrameTimeRef.current = 0;
-      };
-    } else {
-      // Reset to first frame when not speaking
+    // Always run sprite loop while speaking; otherwise idle first frame
+    if (state !== "speaking") {
       setCurrentFrame(0);
+      if (animationFrameRef.current)
+        cancelAnimationFrame(animationFrameRef.current);
       lastFrameTimeRef.current = 0;
+      return;
     }
+
+    let raf: number;
+    const animate = (timestamp: number) => {
+      if (!lastFrameTimeRef.current) lastFrameTimeRef.current = timestamp;
+      const elapsed = timestamp - lastFrameTimeRef.current;
+      if (elapsed >= FRAME_DURATION) {
+        setCurrentFrame((prev) => (prev + 1) % TOTAL_FRAMES);
+        lastFrameTimeRef.current = timestamp;
+      }
+      raf = requestAnimationFrame(animate);
+      animationFrameRef.current = raf;
+    };
+    raf = requestAnimationFrame(animate);
+    animationFrameRef.current = raf;
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      lastFrameTimeRef.current = 0;
+    };
   }, [state]);
 
   // Select image based on personality
   const getBananaImage = () => {
     switch (personality) {
-      case 'study':
+      case "study":
         return studyBananaImage;
-      case 'hype':
+      case "hype":
         return hypeBananaImage;
-      case 'chill':
+      case "chill":
         return chillBananaImage;
-      case 'meme':
+      case "meme":
         return memeBananaImage;
       default:
         return bananaImage;
@@ -94,26 +91,26 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
         rotate: {
           duration: 3,
           repeat: Infinity,
-          ease: 'easeInOut',
+          ease: "easeInOut",
         },
         y: {
           duration: 2,
           repeat: Infinity,
-          ease: 'easeInOut',
+          ease: "easeInOut",
         },
       },
     },
     listening: {
       scale: [1, 1.05, 1, 1.05, 1],
       filter: [
-        'drop-shadow(0 0 0px rgba(255, 214, 10, 0))',
-        'drop-shadow(0 0 20px rgba(255, 214, 10, 0.8))',
-        'drop-shadow(0 0 0px rgba(255, 214, 10, 0))',
+        "drop-shadow(0 0 0px rgba(255, 214, 10, 0))",
+        "drop-shadow(0 0 20px rgba(255, 214, 10, 0.8))",
+        "drop-shadow(0 0 0px rgba(255, 214, 10, 0))",
       ],
       transition: {
         duration: 1.5,
         repeat: Infinity,
-        ease: 'easeInOut',
+        ease: "easeInOut",
       },
     },
     thinking: {
@@ -163,7 +160,7 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
       transition: {
         duration: 2,
         repeat: Infinity,
-        ease: 'easeInOut',
+        ease: "easeInOut",
       },
     },
   };
@@ -176,34 +173,36 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
       initial="idle"
     >
       {/* Banana Character - changes based on personality or shows sprite when speaking */}
-      {state === 'speaking' ? (
+      {state === "speaking" ? (
         <div
           className="w-48 h-48"
           style={{
             backgroundImage: `url(${talkingBananaSprite})`,
-            backgroundSize: `${SPRITE_SIZE * FRAMES_PER_ROW}px ${SPRITE_SIZE * FRAMES_PER_ROW}px`,
+            backgroundSize: `${SPRITE_SIZE * FRAMES_PER_ROW}px ${
+              SPRITE_SIZE * FRAMES_PER_ROW
+            }px`,
             ...getSpritePosition(),
-            filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))',
-            imageRendering: 'crisp-edges',
+            filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))",
+            imageRendering: "crisp-edges",
           }}
         />
       ) : (
         <motion.img
           src={currentImage}
           alt={
-            personality === 'study' 
-              ? 'Study Banana Character' 
-              : personality === 'hype'
-              ? 'Hype Banana Character'
-              : personality === 'chill'
-              ? 'Chill Banana Character'
-              : personality === 'meme'
-              ? 'Meme Banana Character'
-              : 'Cool Banana Character'
+            personality === "study"
+              ? "Study Banana Character"
+              : personality === "hype"
+              ? "Hype Banana Character"
+              : personality === "chill"
+              ? "Chill Banana Character"
+              : personality === "meme"
+              ? "Meme Banana Character"
+              : "Cool Banana Character"
           }
           className="w-48 h-48 object-contain"
           style={{
-            filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))',
+            filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))",
           }}
           key={personality} // Force re-render when personality changes
         />
@@ -211,7 +210,7 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
 
       {/* Sleeping Z's */}
       <AnimatePresence>
-        {state === 'sleeping' && (
+        {state === "sleeping" && (
           <motion.div
             className="absolute -top-8 right-0 text-2xl"
             initial={{ opacity: 0, y: 0 }}
@@ -226,7 +225,7 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
 
       {/* Confused question mark */}
       <AnimatePresence>
-        {state === 'confused' && (
+        {state === "confused" && (
           <motion.div
             className="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl"
             initial={{ scale: 0 }}
@@ -241,7 +240,7 @@ const Banana: React.FC<BananaProps> = ({ state, personality = 'default' }) => {
 
       {/* Excited sparkles */}
       <AnimatePresence>
-        {state === 'excited' && (
+        {state === "excited" && (
           <>
             <motion.div
               className="absolute -top-4 -left-4 text-xl"
